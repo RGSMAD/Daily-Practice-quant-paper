@@ -1,0 +1,60 @@
+daily-aptitude-generator/
+│
+├── .github/
+│   └── workflows/
+│       └── daily-pdf.yml
+│
+├── src/
+│
+│   ├── generators/
+│   │   ├── square_generator.py
+│   │   ├── cube_generator.py
+│   │   ├── square_root_generator.py
+│   │   ├── cube_root_generator.py
+│   │   ├── simplification_generator.py
+│   │   ├── series_generator.py
+│   │   └── question_bank.py
+│   │
+│   ├── pdf/
+│   │   ├── question_pdf.py
+│   │   └── answer_pdf.py
+│   │
+│   ├── email/
+│   │   └── mailer.py
+│   │
+│   ├── models/
+│   │   ├── question.py
+│   │   ├── answer.py
+│   │   └── enums.py
+│   │
+│   ├── utils/
+│   │   ├── constants.py
+│   │   ├── helpers.py
+│   │   ├── history.py
+│   │   ├── logger.py
+│   │   └── validator.py
+│   │
+│   ├── config.py
+│   ├── generator.py
+│   └── main.py
+│
+├── assets/
+│   ├── logo.png
+│   └── fonts/
+│
+├── history/
+│
+├── logs/
+│
+├── output/
+│
+├── tests/
+│   ├── test_generators.py
+│   ├── test_pdf.py
+│   └── test_utils.py
+│
+├── requirements.txt
+├── README.md
+├── LICENSE
+├── .gitignore
+└── config.yaml

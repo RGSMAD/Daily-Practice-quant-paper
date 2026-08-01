@@ -1,0 +1,23 @@
+# PDF Generation
+reportlab>=4.2.0
+
+# Image Support (for logo/header in PDF)
+Pillow>=11.0.0
+
+# Environment Variables
+python-dotenv>=1.0.1
+
+# Timezone Support
+pytz>=2025.1
+
+# Date Utilities
+python-dateutil>=2.9.0
+
+# YAML Configuration
+PyYAML>=6.0.2
+
+# Logging (Rich Console Output)
+rich>=13.9.4
+
+# Progress Bars
+tqdm>=4.67.1
