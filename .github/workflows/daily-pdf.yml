@@ -56,6 +56,13 @@ jobs:
           python -m pip install --upgrade pip
 
 
+      - name: Check repository files
+        run: |
+          pwd
+          ls -la
+          find . -name requirements.txt
+
+
       - name: Install Dependencies
         run: |
           pip install -r requirements.txt
