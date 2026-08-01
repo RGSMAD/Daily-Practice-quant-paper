@@ -44,7 +44,7 @@ class PathsConfig:
 # ============================================================
 
 @dataclass(slots=True, frozen=True)
-class PDFConfig):
+class PDFConfig:
 
     title: str
     author: str
@@ -74,7 +74,7 @@ class PDFConfig):
 # ============================================================
 
 @dataclass(slots=True, frozen=True)
-class QuestionConfig):
+class QuestionConfig:
 
     square_questions: int
     cube_questions: int
@@ -94,7 +94,7 @@ class QuestionConfig):
 # ============================================================
 
 @dataclass(slots=True, frozen=True)
-class NumberRangeConfig):
+class NumberRangeConfig:
 
     square_min: int
     square_max: int
@@ -120,7 +120,7 @@ class NumberRangeConfig):
 # ============================================================
 
 @dataclass(slots=True, frozen=True)
-class DifficultyConfig):
+class DifficultyConfig:
 
     easy_percentage: int
     medium_percentage: int
@@ -128,7 +128,7 @@ class DifficultyConfig):
 
 
 @dataclass(slots=True, frozen=True)
-class EmailConfig):
+class EmailConfig:
 
     smtp_server: str
     smtp_port: int
@@ -144,7 +144,7 @@ class EmailConfig):
 
 
 @dataclass(slots=True, frozen=True)
-class HistoryConfig):
+class HistoryConfig:
 
     enabled: bool
     retain_days: int
@@ -153,14 +153,14 @@ class HistoryConfig):
 
 
 @dataclass(slots=True, frozen=True)
-class LoggingConfig):
+class LoggingConfig:
 
     level: str
     filename: str
 
 
 @dataclass(slots=True, frozen=True)
-class AppConfig):
+class AppConfig:
 
     timezone: str
     app_name: str
@@ -172,7 +172,7 @@ class AppConfig):
 # ============================================================
 
 @dataclass(slots=True, frozen=True)
-class Settings):
+class Settings:
 
     paths: PathsConfig
     pdf: PDFConfig
