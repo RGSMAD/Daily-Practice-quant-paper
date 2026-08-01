@@ -11,9 +11,9 @@ Revision 1:
 - Basic duplicate detection
 """
 
-from __future__ import annotations
-
 import json
+
+from __future__ import annotations
 
 from pathlib import Path
 
