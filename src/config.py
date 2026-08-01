@@ -30,7 +30,7 @@ CONFIG_FILE = PROJECT_ROOT / "config.yaml"
 # ============================================================
 
 @dataclass(slots=True, frozen=True)
-class PathsConfig):
+class PathsConfig:
 
     project_root: Path
     assets_dir: Path
