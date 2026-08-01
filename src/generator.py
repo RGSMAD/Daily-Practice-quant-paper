@@ -5,13 +5,15 @@ Main orchestration service for the
 Daily Aptitude Generator.
 
 Responsible for:
-- Generating aptitude questions
+- Generating unique aptitude questions
 - Managing question history
 - Creating PDFs
 - Sending email notifications
 """
 
 from __future__ import annotations
+
+import random
 
 from pathlib import Path
 from typing import List, Tuple
@@ -43,12 +45,12 @@ class AptitudeGenerator:
         Initialize application services.
         """
 
-        self.question_bank = (
-            QuestionBank()
-        )
-
         self.history = (
             HistoryManager()
+        )
+
+        self.question_bank = (
+            QuestionBank()
         )
 
         self.question_pdf = (
@@ -74,9 +76,8 @@ class AptitudeGenerator:
         Generate daily aptitude PDFs.
 
         Returns:
-            Tuple containing
-            question PDF path and
-            answer PDF path.
+            Tuple containing question PDF
+            path and answer PDF path.
         """
 
         LOGGER.info(
@@ -142,8 +143,7 @@ class AptitudeGenerator:
         self,
     ) -> None:
         """
-        Generate PDFs and
-        email them.
+        Generate PDFs and email them.
         """
 
         question_pdf, answer_pdf = (
@@ -166,70 +166,145 @@ class AptitudeGenerator:
         self,
     ) -> List[Question]:
         """
-        Generate unique aptitude questions.
+        Generate required number of
+        unique aptitude questions.
 
-        Returns:
-            List of unique questions.
+        Duplicate questions found in:
+        - history
+        - current generation batch
+
+        are rejected and replaced
+        with newly generated questions.
         """
 
-        generated_questions = (
-            self.question_bank.generate()
+        required_count = (
+            self._get_required_question_count()
         )
 
-        unique_questions: List[
+        selected_questions: List[
             Question
         ] = []
 
-        for question in generated_questions:
 
-            if self.history.is_duplicate(
-                question
-            ):
+        while len(selected_questions) < required_count:
 
-                LOGGER.warning(
-                    "Duplicate question skipped: %s",
-                    question.question,
+            question_pool = (
+                self.question_bank.generate()
+            )
+
+            random.shuffle(
+                question_pool
+            )
+
+
+            for question in question_pool:
+
+                if len(selected_questions) >= required_count:
+                    break
+
+
+                if self._is_duplicate(
+                    question,
+                    selected_questions,
+                ):
+
+                    LOGGER.info(
+                        "Duplicate question rejected. Generating replacement."
+                    )
+
+                    continue
+
+
+                selected_questions.append(
+                    question
                 )
 
-                continue
 
-            unique_questions.append(
-                question
-            )
+        self._reassign_ids(
+            selected_questions
+        )
+
 
         LOGGER.info(
             "Generated %s unique questions.",
-            len(
-                unique_questions
-            ),
+            len(selected_questions),
         )
 
-        return unique_questions
+
+        return selected_questions
+
+
+    def _is_duplicate(
+        self,
+        question: Question,
+        current_questions: List[Question],
+    ) -> bool:
+        """
+        Check duplicate against history
+        and current generation batch.
+        """
+
+        if self.history.is_duplicate(
+            question
+        ):
+            return True
+
+
+        return any(
+            existing.fingerprint
+            == question.fingerprint
+            for existing
+            in current_questions
+        )
+
+
+    @staticmethod
+    def _get_required_question_count() -> int:
+        """
+        Calculate total number of
+        daily questions from configuration.
+        """
+
+        return (
+            settings.questions.square_questions
+            + settings.questions.cube_questions
+            + settings.questions.square_root_questions
+            + settings.questions.cube_root_questions
+            + settings.questions.simplification_questions
+            + settings.questions.series_questions
+        )
+
+
+    @staticmethod
+    def _reassign_ids(
+        questions: List[Question],
+    ) -> None:
+        """
+        Assign sequential IDs after
+        duplicate filtering.
+        """
+
+        for index, question in enumerate(
+            questions,
+            start=1,
+        ):
+
+            question.id = index
 
 
     @staticmethod
     def _create_answers(
-        questions: List[
-            Question
-        ],
-    ) -> List[
-        Answer
-    ]:
+        questions: List[Question],
+    ) -> List[Answer]:
         """
         Create answer objects from
         generated questions.
-
-        Args:
-            questions:
-                Generated questions.
-
-        Returns:
-            List of Answer objects.
         """
 
         answers: List[
             Answer
         ] = []
+
 
         for question in questions:
 
@@ -247,5 +322,6 @@ class AptitudeGenerator:
                     ),
                 )
             )
+
 
         return answers

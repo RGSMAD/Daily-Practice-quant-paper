@@ -5,7 +5,7 @@ Central question collection service for the
 Daily Aptitude Generator.
 
 Combines all individual question generators
-into a single question bank.
+into a single question generation entry point.
 """
 
 from __future__ import annotations
@@ -34,15 +34,17 @@ class QuestionBank:
     Manages all aptitude question generators.
 
     This class acts as a single entry point
-    for generating the complete daily question set.
+    for generating the complete question pool.
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+    ) -> None:
         """
         Initialize all question generators.
 
         The order below determines the order
-        of questions in the final PDF.
+        of questions in the generated pool.
         """
 
         self.generators = [
@@ -55,9 +57,11 @@ class QuestionBank:
         ]
 
 
-    def generate(self) -> List[Question]:
+    def generate(
+        self,
+    ) -> List[Question]:
         """
-        Generate complete aptitude question bank.
+        Generate complete aptitude question pool.
 
         Returns:
             List[Question]:
@@ -65,7 +69,9 @@ class QuestionBank:
                 from all categories.
         """
 
-        questions: List[Question] = []
+        questions: List[
+            Question
+        ] = []
 
 
         for generator in self.generators:
@@ -95,7 +101,9 @@ class QuestionBank:
 
     @staticmethod
     def _reassign_ids(
-        questions: List[Question],
+        questions: List[
+            Question
+        ],
     ) -> None:
         """
         Assign sequential IDs after combining
