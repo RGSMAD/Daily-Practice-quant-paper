@@ -89,8 +89,9 @@ class CubeGenerator:
 
                 difficulty=difficulty,
 
+                # Updated aptitude sheet style
                 question=(
-                    f"What is the cube of {number}?"
+                    f"{number}³ = ?"
                 ),
 
                 answer=str(

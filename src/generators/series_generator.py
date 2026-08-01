@@ -127,16 +127,12 @@ class SeriesGenerator:
 
     @staticmethod
     def _arithmetic_series() -> Tuple[
-        List[int],
+        List[int | None],
         int,
         SeriesType,
     ]:
         """
         Generate arithmetic progression.
-
-        Returns:
-            Tuple containing sequence,
-            missing value and type.
         """
 
         start = random.randint(
@@ -171,7 +167,7 @@ class SeriesGenerator:
 
     @staticmethod
     def _geometric_series() -> Tuple[
-        List[int],
+        List[int | None],
         int,
         SeriesType,
     ]:
@@ -211,7 +207,7 @@ class SeriesGenerator:
 
     @staticmethod
     def _fibonacci_series() -> Tuple[
-        List[int],
+        List[int | None],
         int,
         SeriesType,
     ]:
@@ -225,7 +221,7 @@ class SeriesGenerator:
         )
 
 
-        values = (
+        values = list(
             FIBONACCI_NUMBERS[
                 index - 3:index + 3
             ]
@@ -233,8 +229,6 @@ class SeriesGenerator:
 
 
         answer = values[3]
-
-        values = list(values)
 
         values[3] = None
 
@@ -249,7 +243,7 @@ class SeriesGenerator:
 
     @staticmethod
     def _square_series() -> Tuple[
-        List[int],
+        List[int | None],
         int,
         SeriesType,
     ]:
@@ -288,7 +282,7 @@ class SeriesGenerator:
 
     @staticmethod
     def _cube_series() -> Tuple[
-        List[int],
+        List[int | None],
         int,
         SeriesType,
     ]:
@@ -327,7 +321,7 @@ class SeriesGenerator:
 
     @staticmethod
     def _prime_series() -> Tuple[
-        List[int],
+        List[int | None],
         int,
         SeriesType,
     ]:
@@ -341,9 +335,11 @@ class SeriesGenerator:
         )
 
 
-        series = PRIME_NUMBERS[
-            start:start + 6
-        ]
+        series = list(
+            PRIME_NUMBERS[
+                start:start + 6
+            ]
+        )
 
 
         answer = series[4]
@@ -364,7 +360,7 @@ class SeriesGenerator:
         sequence: List[int | None],
     ) -> str:
         """
-        Convert sequence into question text.
+        Convert sequence into aptitude sheet format.
 
         Args:
             sequence:
@@ -375,17 +371,11 @@ class SeriesGenerator:
                 Formatted question.
         """
 
-        formatted = ", ".join(
+        return ", ".join(
             "?"
             if value is None
             else str(value)
             for value in sequence
-        )
-
-
-        return (
-            f"Find the missing number: "
-            f"{formatted}"
         )
 
 

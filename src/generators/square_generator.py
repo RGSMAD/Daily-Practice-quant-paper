@@ -84,8 +84,9 @@ class SquareGenerator:
 
                 difficulty=difficulty,
 
+                # Updated aptitude sheet style
                 question=(
-                    f"What is the square of {number}?"
+                    f"{number}² = ?"
                 ),
 
                 answer=str(
@@ -126,8 +127,7 @@ class SquareGenerator:
                 Number used in question.
 
         Returns:
-            Difficulty:
-                Difficulty category.
+            Difficulty category.
         """
 
         if number <= 99:

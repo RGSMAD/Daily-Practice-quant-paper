@@ -126,8 +126,9 @@ class SquareRootGenerator:
                         self._get_difficulty(number)
                     ),
 
+                    # Updated aptitude sheet style
                     question=(
-                        f"Find the square root of {square}."
+                        f"√{square} = ?"
                     ),
 
                     answer=str(
@@ -200,9 +201,9 @@ class SquareRootGenerator:
                         Difficulty.HARD
                     ),
 
+                    # Updated aptitude sheet style
                     question=(
-                        f"Find the approximate "
-                        f"square root of {number}."
+                        f"√{number} = ?"
                     ),
 
                     answer=(

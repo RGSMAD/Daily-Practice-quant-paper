@@ -88,9 +88,9 @@ class CubeRootGenerator:
                         self._get_difficulty(number)
                     ),
 
+                    # Updated aptitude sheet style
                     question=(
-                        f"Find the cube root of "
-                        f"{cube_value}."
+                        f"∛{cube_value} = ?"
                     ),
 
                     answer=str(
