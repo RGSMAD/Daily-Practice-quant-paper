@@ -7,7 +7,7 @@ to a generated aptitude question.
 
 from dataclasses import dataclass
 
-from models.enums import QuestionType
+from src.models.enums import QuestionType
 
 
 @dataclass(slots=True)
