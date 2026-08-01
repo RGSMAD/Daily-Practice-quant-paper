@@ -1,11 +1,12 @@
 """
 generator.py
 
-Main orchestration service for the Daily Aptitude Generator.
+Main orchestration service for the
+Daily Aptitude Generator.
 
 Responsible for:
-- Generating daily aptitude questions
-- Managing history
+- Generating aptitude questions
+- Managing question history
 - Creating PDFs
 - Sending email notifications
 """
@@ -30,14 +31,25 @@ LOGGER = get_logger(__name__)
 
 
 class AptitudeGenerator:
-    """Coordinates the complete daily generation workflow."""
+    """
+    Coordinates the complete daily
+    aptitude generation workflow.
+    """
 
-    def __init__(self) -> None:
-        """Initialize generator services."""
+    def __init__(
+        self,
+    ) -> None:
+        """
+        Initialize application services.
+        """
 
-        self.question_bank = QuestionBank()
+        self.question_bank = (
+            QuestionBank()
+        )
 
-        self.history = HistoryManager()
+        self.history = (
+            HistoryManager()
+        )
 
         self.question_pdf = (
             QuestionPDFGenerator()
@@ -58,22 +70,22 @@ class AptitudeGenerator:
         Path,
         Path,
     ]:
-        """Generate daily aptitude PDFs.
+        """
+        Generate daily aptitude PDFs.
 
         Returns:
-            Tuple[Path, Path]:
-                Question PDF path and answer PDF path.
+            Tuple containing
+            question PDF path and
+            answer PDF path.
         """
 
         LOGGER.info(
             "Starting daily aptitude generation."
         )
 
-
         questions = (
             self._generate_questions()
         )
-
 
         self.history.add_questions(
             questions
@@ -81,41 +93,44 @@ class AptitudeGenerator:
 
         self.history.save()
 
-
         answers = (
             self._create_answers(
                 questions
             )
         )
 
+        output_dir = (
+            settings.paths.output_dir
+        )
+
+        output_dir.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
 
         question_pdf_path = (
-            settings.paths.output_dir
+            output_dir
             / settings.pdf.question_pdf_name
         )
 
         answer_pdf_path = (
-            settings.paths.output_dir
+            output_dir
             / settings.pdf.answer_pdf_name
         )
-
 
         self.question_pdf.generate(
             questions,
             question_pdf_path,
         )
 
-
         self.answer_pdf.generate(
             answers,
             answer_pdf_path,
         )
 
-
         LOGGER.info(
             "PDF generation completed."
         )
-
 
         return (
             question_pdf_path,
@@ -123,16 +138,17 @@ class AptitudeGenerator:
         )
 
 
-
     def generate_and_send(
         self,
     ) -> None:
-        """Generate PDFs and send email."""
+        """
+        Generate PDFs and
+        email them.
+        """
 
         question_pdf, answer_pdf = (
             self.generate()
         )
-
 
         self.email_sender.send(
             [
@@ -141,79 +157,95 @@ class AptitudeGenerator:
             ]
         )
 
-
         LOGGER.info(
-            "Daily aptitude email workflow completed."
+            "Daily aptitude email completed."
         )
-
 
 
     def _generate_questions(
         self,
     ) -> List[Question]:
-        """Generate unique questions.
+        """
+        Generate unique aptitude questions.
 
         Returns:
-            List[Question]:
-                Generated aptitude questions.
+            List of unique questions.
         """
 
-        questions = (
+        generated_questions = (
             self.question_bank.generate()
         )
 
+        unique_questions: List[
+            Question
+        ] = []
 
-        unique_questions = []
+        for question in generated_questions:
 
-
-        for question in questions:
-
-            if self.history.exists(
-                question.question
+            if self.history.is_duplicate(
+                question
             ):
 
                 LOGGER.warning(
-                    "Skipping duplicate question: %s",
+                    "Duplicate question skipped: %s",
                     question.question,
                 )
 
                 continue
 
-
             unique_questions.append(
                 question
             )
 
-
         LOGGER.info(
             "Generated %s unique questions.",
-            len(unique_questions),
+            len(
+                unique_questions
+            ),
         )
-
 
         return unique_questions
 
 
-
     @staticmethod
     def _create_answers(
-        questions: List[Question],
-    ) -> List[Answer]:
-        """Create answer objects.
+        questions: List[
+            Question
+        ],
+    ) -> List[
+        Answer
+    ]:
+        """
+        Create answer objects from
+        generated questions.
 
         Args:
             questions:
                 Generated questions.
 
         Returns:
-            List[Answer]:
-                Answer objects.
+            List of Answer objects.
         """
 
-        return [
-            Answer(
-                question_id=question.id,
-                answer=question.answer,
+        answers: List[
+            Answer
+        ] = []
+
+        for question in questions:
+
+            answers.append(
+                Answer(
+                    question_id=question.id,
+                    question_type=(
+                        question.question_type
+                    ),
+                    question=(
+                        question.question
+                    ),
+                    answer=(
+                        question.answer
+                    ),
+                )
             )
-            for question in questions
-        ]
+
+        return answers

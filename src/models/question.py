@@ -1,19 +1,15 @@
 """
 question.py
 
-Dataclass representing a generated aptitude question.
+Dataclass representing a generated
+aptitude question.
 """
 
 from __future__ import annotations
 
-import hashlib
-
-from dataclasses import (
-    asdict,
-    dataclass,
-    field,
-)
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
+from hashlib import sha256
 from typing import Any
 
 from src.models.enums import (
@@ -25,10 +21,11 @@ from src.models.enums import (
 @dataclass(slots=True)
 class Question:
     """
-    Represents a single aptitude question.
+    Represents a single
+    aptitude question.
     """
 
-    id: str
+    id: int
 
     question_type: QuestionType
 
@@ -53,20 +50,22 @@ class Question:
     )
 
 
-    def __post_init__(self) -> None:
+    def __post_init__(
+        self,
+    ) -> None:
         """
-        Generate a unique fingerprint used for
-        duplicate detection.
+        Automatically generate a unique
+        fingerprint for duplicate detection.
         """
 
-        content = (
-            f"{self.question_type.value}|"
-            f"{self.question}|"
-            f"{self.answer}"
-        )
-
-        self.fingerprint = hashlib.sha256(
-            content.encode("utf-8")
+        self.fingerprint = sha256(
+            (
+                self.question_type.value
+                + "|"
+                + self.question.strip().lower()
+            ).encode(
+                "utf-8"
+            )
         ).hexdigest()
 
 
@@ -74,11 +73,13 @@ class Question:
         self,
     ) -> dict[str, Any]:
         """
-        Convert Question object into JSON-compatible
-        dictionary.
+        Convert Question into a
+        JSON-compatible dictionary.
         """
 
-        data = asdict(self)
+        data = asdict(
+            self
+        )
 
         data["question_type"] = (
             self.question_type.value
@@ -101,7 +102,8 @@ class Question:
         data: dict[str, Any],
     ) -> "Question":
         """
-        Recreate Question object from stored JSON data.
+        Recreate Question from
+        stored JSON data.
         """
 
         question = cls(
@@ -128,8 +130,10 @@ class Question:
             ),
         )
 
-        question.fingerprint = data[
-            "fingerprint"
-        ]
+        if "fingerprint" in data:
+
+            question.fingerprint = (
+                data["fingerprint"]
+            )
 
         return question

@@ -1,30 +1,26 @@
 """
 history.py
 
-Basic question history management for the
+Question history management for the
 Daily Aptitude Generator.
 
-
-- Load history
-- Save history
-- Add questions
-- Basic duplicate detection
+Responsible for:
+- Loading history
+- Saving history
 - Duplicate detection
-- Retention cleanup
-- Maximum record control
-- History utilities
+- History cleanup
+- Recent question retrieval
 """
-
-
 
 from __future__ import annotations
 
 import json
+
+from datetime import datetime, timedelta
 from pathlib import Path
 
-from src.models.question import Question
 from src.config import settings
-
+from src.models.question import Question
 
 
 # ============================================================
@@ -35,7 +31,7 @@ def get_history_file() -> Path:
     """
     Return history file path.
 
-    Creates history directory automatically.
+    Creates history directory if necessary.
     """
 
     history_dir = settings.paths.history_dir
@@ -45,7 +41,10 @@ def get_history_file() -> Path:
         exist_ok=True,
     )
 
-    return history_dir / settings.history.filename
+    return (
+        history_dir
+        / settings.history.filename
+    )
 
 
 # ============================================================
@@ -54,7 +53,8 @@ def get_history_file() -> Path:
 
 def is_history_enabled() -> bool:
     """
-    Check whether history tracking is enabled.
+    Check whether history tracking
+    is enabled.
     """
 
     return settings.history.enabled
@@ -66,7 +66,7 @@ def is_history_enabled() -> bool:
 
 def load_history() -> list[Question]:
     """
-    Load questions from history file.
+    Load question history from disk.
     """
 
     if not is_history_enabled():
@@ -78,6 +78,7 @@ def load_history() -> list[Question]:
         return []
 
     try:
+
         with file_path.open(
             "r",
             encoding="utf-8",
@@ -105,13 +106,13 @@ def save_history(
     questions: list[Question],
 ) -> None:
     """
-    Save questions after cleanup.
+    Save history after cleanup.
     """
 
     if not is_history_enabled():
         return
 
-    questions = cleanup_history(
+    cleaned = cleanup_history(
         questions
     )
 
@@ -125,68 +126,12 @@ def save_history(
         json.dump(
             [
                 question.to_dict()
-                for question in questions
+                for question in cleaned
             ],
             file,
             indent=4,
             ensure_ascii=False,
         )
-
-
-# ============================================================
-# DUPLICATE CHECK
-# ============================================================
-
-def is_duplicate(
-    question: Question,
-    history: list[Question],
-) -> bool:
-    """
-    Check duplicate question using fingerprint.
-    """
-
-    return any(
-        item.fingerprint
-        == question.fingerprint
-        for item in history
-    )
-
-
-# ============================================================
-# ADD QUESTION
-# ============================================================
-
-def add_question(
-    question: Question,
-) -> bool:
-    """
-    Add question to history.
-
-    Returns:
-        True  -> Added
-        False -> Duplicate
-    """
-
-    if not is_history_enabled():
-        return True
-
-    history = load_history()
-
-    if is_duplicate(
-        question,
-        history,
-    ):
-        return False
-
-    history.append(
-        question
-    )
-
-    save_history(
-        history
-    )
-
-    return True
 
 
 # ============================================================
@@ -197,11 +142,11 @@ def cleanup_history(
     questions: list[Question],
 ) -> list[Question]:
     """
-    Remove expired records and
-    maintain maximum history size.
+    Remove expired history and
+    enforce maximum record limit.
     """
 
-    expiry_date = (
+    expiry = (
         datetime.now()
         -
         timedelta(
@@ -209,14 +154,13 @@ def cleanup_history(
         )
     )
 
-    filtered_questions = [
+    filtered = [
         question
         for question in questions
-        if question.created_at >= expiry_date
+        if question.created_at >= expiry
     ]
 
-
-    return filtered_questions[
+    return filtered[
         -settings.history.max_records:
     ]
 
@@ -229,8 +173,7 @@ def get_recent_questions(
     days: int = 7,
 ) -> list[Question]:
     """
-    Return questions generated within
-    specified number of days.
+    Return recently generated questions.
     """
 
     cutoff = (
@@ -252,50 +195,133 @@ def get_recent_questions(
 
 def clear_history() -> None:
     """
-    Remove complete history file.
+    Delete history file.
     """
 
     file_path = get_history_file()
 
     if file_path.exists():
+
         file_path.unlink()
 
 
+# ============================================================
+# HISTORY MANAGER
+# ============================================================
 
 class HistoryManager:
     """
     Manages question history.
     """
 
-    def load(self) -> list[Question]:
-        return load_history()
+    def __init__(
+        self,
+    ) -> None:
 
-    def save(
+        self._history = (
+            load_history()
+        )
+
+
+    def exists(
+        self,
+        question: Question,
+    ) -> bool:
+        """
+        Check whether question
+        already exists.
+        """
+
+        return any(
+            item.fingerprint
+            == question.fingerprint
+            for item in self._history
+        )
+
+
+    def add_question(
+        self,
+        question: Question,
+    ) -> bool:
+        """
+        Add one question.
+
+        Returns:
+            True if added.
+            False if duplicate.
+        """
+
+        if self.exists(
+            question
+        ):
+            return False
+
+        self._history.append(
+            question
+        )
+
+        return True
+
+
+    def add_questions(
         self,
         questions: list[Question],
     ) -> None:
-        save_history(questions)
+        """
+        Add multiple questions.
+        """
 
-    def add(
-        self,
-        question: Question,
-    ) -> bool:
-        return add_question(question)
+        for question in questions:
 
-    def is_duplicate(
+            self.add_question(
+                question
+            )
+
+
+    def load(
         self,
-        question: Question,
-    ) -> bool:
-        return is_duplicate(
-            question,
-            load_history(),
+    ) -> list[Question]:
+        """
+        Return loaded history.
+        """
+
+        return list(
+            self._history
         )
+
+
+    def save(
+        self,
+    ) -> None:
+        """
+        Persist history.
+        """
+
+        save_history(
+            self._history
+        )
+
 
     def recent(
         self,
         days: int = 7,
     ) -> list[Question]:
-        return get_recent_questions(days)
+        """
+        Return recent questions.
+        """
 
-    def clear(self) -> None:
+        return get_recent_questions(
+            days
+        )
+
+
+    def clear(
+        self,
+    ) -> None:
+        """
+        Clear history.
+        """
+
+        self._history.clear()
+
         clear_history()
