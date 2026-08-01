@@ -237,6 +237,21 @@ class HistoryManager:
             self.history_file.unlink()
 
 
+
+        def cleanup(
+        self,
+    ) -> None:
+        """
+        Perform history cleanup and
+        save the updated history.
+        """
+
+        self._cleanup()
+
+        self.save()
+
+
+
     def _cleanup(
         self,
     ) -> None:
