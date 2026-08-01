@@ -238,7 +238,7 @@ class HistoryManager:
 
 
 
-        def cleanup(
+    def cleanup(
         self,
     ) -> None:
         """
