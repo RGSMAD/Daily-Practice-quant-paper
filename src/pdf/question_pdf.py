@@ -6,6 +6,7 @@ Generates the daily aptitude practice question PDF.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import List
 
@@ -37,6 +38,9 @@ class QuestionPDFGenerator:
         )
 
 
+    # =========================================================
+    # MAIN PDF GENERATOR
+    # =========================================================
 
     def generate(
         self,
@@ -45,17 +49,6 @@ class QuestionPDFGenerator:
     ) -> Path:
         """
         Generate question PDF.
-
-        Args:
-            questions:
-                List of aptitude questions.
-
-            output_path:
-                PDF output location.
-
-        Returns:
-            Path:
-                Generated PDF path.
         """
 
         LOGGER.info(
@@ -98,6 +91,7 @@ class QuestionPDFGenerator:
             start=1,
         ):
 
+
             if y_position < 80:
 
                 self._add_page_number(
@@ -116,9 +110,16 @@ class QuestionPDFGenerator:
                 )
 
 
+            formatted_question = (
+                self._format_math_symbols(
+                    question.question
+                )
+            )
+
+
             text = (
                 f"{index}. "
-                f"{question.question}"
+                f"{formatted_question}"
             )
 
 
@@ -158,16 +159,49 @@ class QuestionPDFGenerator:
 
 
 
+    # =========================================================
+    # MATH SYMBOL FORMATTER
+    # =========================================================
+
+    def _format_math_symbols(
+        self,
+        text: str,
+    ) -> str:
+        """
+        Convert LaTeX-like math notation
+        into PDF-friendly symbols.
+        """
+
+        # Cube root
+        text = re.sub(
+            r"\\sqrt\[3\]\{(\d+)\}",
+            r"∛\1",
+            text,
+        )
+
+
+        # Square root
+        text = re.sub(
+            r"\\sqrt\{(\d+)\}",
+            r"√\1",
+            text,
+        )
+
+
+        return text
+
+
+
+    # =========================================================
+    # HEADER
+    # =========================================================
+
     def _draw_header(
         self,
         pdf: canvas.Canvas,
     ) -> None:
         """
         Draw PDF header.
-
-        Args:
-            pdf:
-                ReportLab canvas object.
         """
 
         pdf.setFont(
@@ -183,16 +217,17 @@ class QuestionPDFGenerator:
         )
 
 
+
+    # =========================================================
+    # PAGE NUMBER
+    # =========================================================
+
     def _add_page_number(
         self,
         pdf: canvas.Canvas,
     ) -> None:
         """
         Add page number.
-
-        Args:
-            pdf:
-                ReportLab canvas object.
         """
 
         if not settings.pdf.show_page_numbers:
