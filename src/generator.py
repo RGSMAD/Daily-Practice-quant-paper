@@ -18,11 +18,22 @@ from typing import List, Tuple
 
 from src.config import settings
 from src.email.mailer import EmailSender
+
 from src.generators.question_bank import QuestionBank
+
+from src.generators.square_generator import SquareGenerator
+from src.generators.cube_generator import CubeGenerator
+from src.generators.square_root_generator import SquareRootGenerator
+from src.generators.cube_root_generator import CubeRootGenerator
+from src.generators.simplification_generator import SimplificationGenerator
+from src.generators.series_generator import SeriesGenerator
+
 from src.models.answer import Answer
 from src.models.question import Question
+
 from src.pdf.answer_pdf import AnswerPDFGenerator
 from src.pdf.question_pdf import QuestionPDFGenerator
+
 from src.utils.history import HistoryManager
 from src.utils.logger import get_logger
 
@@ -37,9 +48,6 @@ class AptitudeGenerator:
 
 
     def __init__(self) -> None:
-        """
-        Initialize application services.
-        """
 
         self.history = HistoryManager()
 
@@ -61,6 +69,7 @@ class AptitudeGenerator:
         self,
     ) -> Tuple[Path, Path]:
 
+
         LOGGER.info(
             "Starting daily aptitude generation."
         )
@@ -74,7 +83,6 @@ class AptitudeGenerator:
         self.history.add_questions(
             questions
         )
-
 
         self.history.save()
 
@@ -134,12 +142,13 @@ class AptitudeGenerator:
 
 
     # =========================================================
-    # EMAIL FLOW
+    # EMAIL
     # =========================================================
 
     def generate_and_send(
         self,
     ) -> None:
+
 
         question_pdf, answer_pdf = (
             self.generate()
@@ -167,49 +176,121 @@ class AptitudeGenerator:
     def _generate_questions(
         self,
     ) -> List[Question]:
+
         """
-        Generate final daily question set.
+        Generate questions category-wise.
 
-        Keeps original generator order:
-
-        1. Squares
-        2. Cubes
-        3. Square Roots
-        4. Cube Roots
-        5. Simplification
-        6. Series
+        Duplicate questions are replaced
+        from the same category.
         """
 
 
-        generated_questions = (
-            self.question_bank.generate()
-        )
+        generator_config = [
+
+            (
+                SquareGenerator(),
+                settings.questions.square_questions,
+            ),
+
+            (
+                CubeGenerator(),
+                settings.questions.cube_questions,
+            ),
+
+            (
+                SquareRootGenerator(),
+                settings.questions.square_root_questions,
+            ),
+
+            (
+                CubeRootGenerator(),
+                settings.questions.cube_root_questions,
+            ),
+
+            (
+                SimplificationGenerator(),
+                settings.questions.simplification_questions,
+            ),
+
+            (
+                SeriesGenerator(),
+                settings.questions.series_questions,
+            ),
+        ]
 
 
-        selected_questions: List[
-            Question
-        ] = []
+        selected_questions: List[Question] = []
 
 
-        for question in generated_questions:
+        for generator, required_count in generator_config:
 
 
-            if self._is_duplicate(
-                question,
-                selected_questions,
-            ):
+            category_questions: List[
+                Question
+            ] = []
 
-                LOGGER.info(
-                    "Duplicate rejected: %s",
-                    question.question,
+
+            attempts = 0
+
+
+            while len(category_questions) < required_count:
+
+
+                attempts += 1
+
+
+                if attempts > 100:
+
+                    raise RuntimeError(
+                        f"Unable to generate enough "
+                        f"unique questions for "
+                        f"{generator.__class__.__name__}"
+                    )
+
+
+                generated = (
+                    generator.generate()
                 )
 
-                continue
+
+                for question in generated:
 
 
-            selected_questions.append(
-                question
+                    if len(category_questions) >= required_count:
+                        break
+
+
+                    if self._is_duplicate(
+                        question,
+                        selected_questions
+                        +
+                        category_questions,
+                    ):
+
+                        LOGGER.info(
+                            "Duplicate rejected: %s",
+                            question.question,
+                        )
+
+                        continue
+
+
+                    category_questions.append(
+                        question
+                    )
+
+
+            LOGGER.info(
+                "%s finalized %s questions",
+                generator.__class__.__name__,
+                len(category_questions),
             )
+
+
+            selected_questions.extend(
+                category_questions
+            )
+
 
 
         self._reassign_ids(
@@ -236,9 +317,6 @@ class AptitudeGenerator:
         question: Question,
         current_questions: List[Question],
     ) -> bool:
-        """
-        Check duplicate questions.
-        """
 
 
         if self.history.is_duplicate(
@@ -253,23 +331,19 @@ class AptitudeGenerator:
             ==
             question.fingerprint
 
-            for existing
-            in current_questions
+            for existing in current_questions
         )
 
 
 
     # =========================================================
-    # ID MANAGEMENT
+    # IDS
     # =========================================================
 
     @staticmethod
     def _reassign_ids(
         questions: List[Question],
     ) -> None:
-        """
-        Assign sequential IDs.
-        """
 
 
         for index, question in enumerate(
@@ -282,21 +356,16 @@ class AptitudeGenerator:
 
 
     # =========================================================
-    # ANSWER CREATION
+    # ANSWERS
     # =========================================================
 
     @staticmethod
     def _create_answers(
         questions: List[Question],
     ) -> List[Answer]:
-        """
-        Create answer objects.
-        """
 
 
-        answers: List[
-            Answer
-        ] = []
+        answers: List[Answer] = []
 
 
         for question in questions:
