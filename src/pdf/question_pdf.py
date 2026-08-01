@@ -13,6 +13,9 @@ from typing import List
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
 from src.config import settings
 from src.models.question import Question
 from src.utils.logger import get_logger
@@ -26,15 +29,43 @@ class QuestionPDFGenerator:
     Generates PDF containing aptitude questions.
     """
 
+
     def __init__(self) -> None:
         """
         Initialize PDF configuration.
         """
 
+        self._register_fonts()
+
         self.page_width, self.page_height = A4
 
         self.margin = (
             settings.pdf.margin
+        )
+
+
+    # =========================================================
+    # FONT REGISTRATION
+    # =========================================================
+
+    def _register_fonts(self) -> None:
+        """
+        Register Unicode fonts for mathematical symbols.
+        """
+
+        pdfmetrics.registerFont(
+            TTFont(
+                "DejaVuSans",
+                "assets/fonts/DejaVuSans.ttf",
+            )
+        )
+
+
+        pdfmetrics.registerFont(
+            TTFont(
+                "DejaVuSans-Bold",
+                "assets/fonts/DejaVuSans-Bold.ttf",
+            )
         )
 
 
@@ -66,9 +97,11 @@ class QuestionPDFGenerator:
             settings.pdf.title
         )
 
+
         pdf.setAuthor(
             settings.pdf.author
         )
+
 
         pdf.setSubject(
             settings.pdf.subject
@@ -100,9 +133,11 @@ class QuestionPDFGenerator:
 
                 pdf.showPage()
 
+
                 self._draw_header(
                     pdf
                 )
+
 
                 y_position = (
                     self.page_height
@@ -160,7 +195,7 @@ class QuestionPDFGenerator:
 
 
     # =========================================================
-    # MATH SYMBOL FORMATTER
+    # MATH FORMATTER
     # =========================================================
 
     def _format_math_symbols(
@@ -168,19 +203,28 @@ class QuestionPDFGenerator:
         text: str,
     ) -> str:
         """
-        Convert LaTeX-like math notation
+        Convert LaTeX-style notation
         into PDF-friendly symbols.
         """
 
+
         # Cube root
+        # \sqrt[3]{4096}
+        # becomes
+        # ³√4096
+
         text = re.sub(
             r"\\sqrt\[3\]\{(\d+)\}",
-            r"∛\1",
+            r"³√\1",
             text,
         )
 
 
         # Square root
+        # \sqrt{625}
+        # becomes
+        # √625
+
         text = re.sub(
             r"\\sqrt\{(\d+)\}",
             r"√\1",
@@ -203,6 +247,7 @@ class QuestionPDFGenerator:
         """
         Draw PDF header.
         """
+
 
         pdf.setFont(
             settings.pdf.font_bold,
@@ -229,6 +274,7 @@ class QuestionPDFGenerator:
         """
         Add page number.
         """
+
 
         if not settings.pdf.show_page_numbers:
 

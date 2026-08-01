@@ -57,6 +57,11 @@ questions:
   cube_root_questions: 10
 
 
+  # Square root distribution
+  perfect_square_roots: 8
+  non_perfect_square_roots: 2
+
+
   # Simplification practice
   simplification_questions: 20
 
