@@ -179,15 +179,13 @@ Revision 2:
 - History utilities
 """
 
-from __future__ import annotations
-
 import json
 
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from models.question import Question
-from utils.config import settings
+from src.models.question import Question
+from src.config import settings
 
 
 # ============================================================
