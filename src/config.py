@@ -21,7 +21,19 @@ from reportlab.lib.pagesizes import A4
 # PROJECT PATHS
 # ============================================================
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+def find_project_root() -> Path:
+    current = Path(__file__).resolve()
+
+    for parent in current.parents:
+        if (parent / "config.yaml").exists():
+            return parent
+
+    raise FileNotFoundError(
+        "Could not locate project root containing config.yaml"
+    )
+
+
+PROJECT_ROOT = find_project_root()
 CONFIG_FILE = PROJECT_ROOT / "config.yaml"
 
 
