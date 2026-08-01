@@ -11,10 +11,10 @@ Revision 1:
 - Basic duplicate detection
 """
 
-import json
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from models.question import Question
