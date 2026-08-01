@@ -10,10 +10,8 @@ into a single question bank.
 
 from __future__ import annotations
 
-import random
 from typing import List
 
-from src.config import settings
 from src.generators.cube_generator import CubeGenerator
 from src.generators.cube_root_generator import CubeRootGenerator
 from src.generators.series_generator import SeriesGenerator
@@ -42,6 +40,9 @@ class QuestionBank:
     def __init__(self) -> None:
         """
         Initialize all question generators.
+
+        The order below determines the order
+        of questions in the final PDF.
         """
 
         self.generators = [
@@ -78,15 +79,8 @@ class QuestionBank:
             )
 
 
-        random.shuffle(
+        self._reassign_ids(
             questions
-        )
-
-
-        questions = (
-            self._reassign_ids(
-                questions
-            )
         )
 
 
@@ -99,22 +93,17 @@ class QuestionBank:
         return questions
 
 
-
     @staticmethod
     def _reassign_ids(
         questions: List[Question],
-    ) -> List[Question]:
+    ) -> None:
         """
         Assign sequential IDs after combining
-        multiple generators.
+        questions from all generators.
 
         Args:
             questions:
                 Combined question list.
-
-        Returns:
-            List[Question]:
-                Questions with updated IDs.
         """
 
         for index, question in enumerate(
@@ -123,6 +112,3 @@ class QuestionBank:
         ):
 
             question.id = index
-
-
-        return questions
