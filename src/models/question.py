@@ -6,11 +6,20 @@ Dataclass representing a generated aptitude question.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+import hashlib
+
+from dataclasses import (
+    asdict,
+    dataclass,
+    field,
+)
 from datetime import datetime
 from typing import Any
 
-from src.models.enums import Difficulty, QuestionType
+from src.models.enums import (
+    Difficulty,
+    QuestionType,
+)
 
 
 @dataclass(slots=True)
@@ -20,8 +29,6 @@ class Question:
     """
 
     id: str
-
-    fingerprint: str
 
     question_type: QuestionType
 
@@ -37,14 +44,38 @@ class Question:
 
     source: str | None = None
 
-    created_at: datetime = (
-        datetime.now()
+    created_at: datetime = field(
+        default_factory=datetime.now
+    )
+
+    fingerprint: str = field(
+        init=False
     )
 
 
-    def to_dict(self) -> dict[str, Any]:
+    def __post_init__(self) -> None:
         """
-        Convert Question object into JSON-compatible data.
+        Generate a unique fingerprint used for
+        duplicate detection.
+        """
+
+        content = (
+            f"{self.question_type.value}|"
+            f"{self.question}|"
+            f"{self.answer}"
+        )
+
+        self.fingerprint = hashlib.sha256(
+            content.encode("utf-8")
+        ).hexdigest()
+
+
+    def to_dict(
+        self,
+    ) -> dict[str, Any]:
+        """
+        Convert Question object into JSON-compatible
+        dictionary.
         """
 
         data = asdict(self)
@@ -70,12 +101,11 @@ class Question:
         data: dict[str, Any],
     ) -> "Question":
         """
-        Recreate Question object from JSON data.
+        Recreate Question object from stored JSON data.
         """
 
-        return cls(
+        question = cls(
             id=data["id"],
-            fingerprint=data["fingerprint"],
             question_type=QuestionType(
                 data["question_type"]
             ),
@@ -97,3 +127,9 @@ class Question:
                 data["created_at"]
             ),
         )
+
+        question.fingerprint = data[
+            "fingerprint"
+        ]
+
+        return question
