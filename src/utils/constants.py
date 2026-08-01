@@ -7,7 +7,7 @@ the Daily Aptitude Generator.
 
 from __future__ import annotations
 
-from models.enums import SeriesType
+from src.models.enums import SeriesType
 
 # ============================================================
 # Mathematical Operators
