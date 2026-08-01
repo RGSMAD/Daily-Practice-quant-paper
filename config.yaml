@@ -30,7 +30,6 @@ pdf:
 
   show_page_numbers: true
   include_logo: true
-
   logo_name: "logo.png"
 
   question_pdf_name: "Daily_Practice.pdf"
@@ -112,8 +111,23 @@ email:
 
 history:
   enabled: true
-  retain_days: 30
-  filename: "history.json"
+
+  active_file: "active.json"
+
+  archive_directory: "archive"
+
+  archive_monthly: true
+
+# ============================================================
+# Weekly Revision Configuration
+# ============================================================
+
+revision:
+  enabled: true
+
+  revision_day: "Sunday"
+
+  questions_per_topic: 5
 
 # ============================================================
 # Logging Configuration

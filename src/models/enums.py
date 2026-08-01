@@ -5,58 +5,80 @@ Centralized enumerations used throughout the
 Daily Aptitude Generator.
 """
 
-from enum import Enum, auto
+from enum import Enum
 
 
 # ============================================================
 # Difficulty
 # ============================================================
 
-class Difficulty(Enum):
-    EASY = auto()
-    MEDIUM = auto()
-    HARD = auto()
+class Difficulty(str, Enum):
+
+    EASY = "easy"
+    MEDIUM = "medium"
+    HARD = "hard"
 
 
 # ============================================================
 # Question Sections
 # ============================================================
 
-class QuestionType(Enum):
-    SQUARE = auto()
-    CUBE = auto()
-    SQUARE_ROOT = auto()
-    CUBE_ROOT = auto()
-    SIMPLIFICATION = auto()
-    NUMBER_SERIES = auto()
+class QuestionType(str, Enum):
+
+    SQUARE = "square"
+
+    CUBE = "cube"
+
+    SQUARE_ROOT = "square_root"
+
+    CUBE_ROOT = "cube_root"
+
+    SIMPLIFICATION = "simplification"
+
+    NUMBER_SERIES = "number_series"
 
 
 # ============================================================
 # Number Series Types
 # ============================================================
 
-class SeriesType(Enum):
-    ARITHMETIC = auto()
-    GEOMETRIC = auto()
-    FIBONACCI = auto()
-    SQUARES = auto()
-    CUBES = auto()
-    PRIMES = auto()
-    DIFFERENCE = auto()
-    ALTERNATE = auto()
-    MIXED = auto()
+class SeriesType(str, Enum):
+
+    ARITHMETIC = "arithmetic"
+
+    GEOMETRIC = "geometric"
+
+    FIBONACCI = "fibonacci"
+
+    SQUARES = "squares"
+
+    CUBES = "cubes"
+
+    PRIMES = "primes"
+
+    DIFFERENCE = "difference"
+
+    ALTERNATE = "alternate"
+
+    MIXED = "mixed"
 
 
 # ============================================================
 # PDF Sections
 # ============================================================
 
-class PDFSection(Enum):
+class PDFSection(str, Enum):
+
     SQUARES = "Squares"
+
     CUBES = "Cubes"
+
     SQUARE_ROOTS = "Square Roots"
+
     CUBE_ROOTS = "Cube Roots"
+
     SIMPLIFICATION = "Simplification"
+
     NUMBER_SERIES = "Missing Number Series"
 
 
@@ -64,36 +86,60 @@ class PDFSection(Enum):
 # PDF Theme
 # ============================================================
 
-class PDFTheme(Enum):
-    CLASSIC = auto()
-    MINIMAL = auto()
-    MODERN = auto()
+class PDFTheme(str, Enum):
+
+    CLASSIC = "classic"
+
+    MINIMAL = "minimal"
+
+    MODERN = "modern"
 
 
 # ============================================================
 # Email Status
 # ============================================================
 
-class EmailStatus(Enum):
-    SUCCESS = auto()
-    FAILED = auto()
+class EmailStatus(str, Enum):
+
+    SUCCESS = "success"
+
+    FAILED = "failed"
 
 
 # ============================================================
 # Generation Status
 # ============================================================
 
-class GenerationStatus(Enum):
-    SUCCESS = auto()
-    FAILED = auto()
+class GenerationStatus(str, Enum):
+
+    SUCCESS = "success"
+
+    FAILED = "failed"
+
+
+# ============================================================
+# History Action
+# ============================================================
+
+class HistoryAction(str, Enum):
+
+    CREATED = "created"
+
+    DUPLICATE = "duplicate"
+
+    REMOVED = "removed"
 
 
 # ============================================================
 # Log Level
 # ============================================================
 
-class LogLevel(Enum):
-    INFO = auto()
-    WARNING = auto()
-    ERROR = auto()
-    DEBUG = auto()
+class LogLevel(str, Enum):
+
+    INFO = "info"
+
+    WARNING = "warning"
+
+    ERROR = "error"
+
+    DEBUG = "debug"

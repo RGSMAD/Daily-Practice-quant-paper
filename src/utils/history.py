@@ -1,176 +1,424 @@
 """
 history.py
 
-Manages generated question history to prevent duplicates
-across daily executions.
+Basic question history management for the
+Daily Aptitude Generator.
+
+Revision 1:
+- Load history
+- Save history
+- Add questions
+- Basic duplicate detection
 """
 
 from __future__ import annotations
 
 import json
-from datetime import datetime
+
 from pathlib import Path
-from typing import List
 
-from src.config import settings
-from src.models.question import Question
-from src.utils.helpers import ensure_directory
-from src.utils.logger import get_logger
+from models.question import Question
+from utils.config import settings
 
 
-LOGGER = get_logger(__name__)
+# ============================================================
+# HISTORY PATH
+# ============================================================
+
+def get_history_file() -> Path:
+    """
+    Return history file path.
+
+    Creates history directory if it does not exist.
+    """
+
+    history_dir = settings.paths.history_dir
+
+    history_dir.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    return history_dir / settings.history.filename
 
 
-class HistoryManager:
-    """Handles storing and checking generated questions."""
+# ============================================================
+# LOAD HISTORY
+# ============================================================
 
-    def __init__(self) -> None:
-        """Initialize history manager."""
+def load_history() -> list[Question]:
+    """
+    Load stored questions from history file.
 
-        self.history_directory: Path = (
-            settings.paths.history_dir
-        )
+    Returns:
+        List of Question objects.
 
-        ensure_directory(
-            self.history_directory
-        )
+    If history file does not exist,
+    returns an empty list.
+    """
 
-        self.history_file: Path = (
-            self.history_directory
-            / settings.history.filename
-        )
+    file_path = get_history_file()
 
-        self.questions: set[str] = set()
+    if not file_path.exists():
+        return []
 
-        self._load()
-
-
-    def exists(
-        self,
-        question_text: str,
-    ) -> bool:
-        """Check whether a question already exists.
-
-        Args:
-            question_text:
-                Question text to search.
-
-        Returns:
-            bool:
-                True if question exists.
-        """
-
-        return question_text in self.questions
-
-
-    def add(
-        self,
-        question_text: str,
-    ) -> None:
-        """Add a question to history.
-
-        Args:
-            question_text:
-                Question text.
-        """
-
-        self.questions.add(
-            question_text
-        )
-
-
-    def add_questions(
-        self,
-        questions: List[Question],
-    ) -> None:
-        """Add multiple questions.
-
-        Args:
-            questions:
-                Generated questions.
-        """
-
-        for question in questions:
-            self.add(
-                question.question
-            )
-
-
-    def save(self) -> None:
-        """Save history to JSON file."""
-
-        data = {
-            "generated_at": datetime.now().isoformat(),
-            "total_questions": len(
-                self.questions
-            ),
-            "questions": sorted(
-                self.questions
-            ),
-        }
-
-        with self.history_file.open(
-            "w",
+    try:
+        with file_path.open(
+            "r",
             encoding="utf-8",
         ) as file:
 
-            json.dump(
-                data,
-                file,
-                indent=4,
-                ensure_ascii=False,
-            )
+            data = json.load(file)
 
-        LOGGER.info(
-            "Saved %s questions to history.",
-            len(self.questions),
+    except json.JSONDecodeError:
+        return []
+
+    return [
+        Question.from_dict(item)
+        for item in data
+    ]
+
+
+# ============================================================
+# SAVE HISTORY
+# ============================================================
+
+def save_history(
+    questions: list[Question],
+) -> None:
+    """
+    Save questions into history file.
+    """
+
+    file_path = get_history_file()
+
+    with file_path.open(
+        "w",
+        encoding="utf-8",
+    ) as file:
+
+        json.dump(
+            [
+                question.to_dict()
+                for question in questions
+            ],
+            file,
+            indent=4,
+            ensure_ascii=False,
         )
 
 
-    def _load(self) -> None:
-        """Load previous question history."""
+# ============================================================
+# DUPLICATE CHECK
+# ============================================================
 
-        if not self.history_file.exists():
+def is_duplicate(
+    question: Question,
+    history: list[Question],
+) -> bool:
+    """
+    Check whether question already exists.
+    """
 
-            LOGGER.info(
-                "No history file found. Starting fresh."
-            )
-
-            return
-
-
-        try:
-
-            with self.history_file.open(
-                "r",
-                encoding="utf-8",
-            ) as file:
-
-                data = json.load(file)
+    return any(
+        existing.fingerprint
+        == question.fingerprint
+        for existing in history
+    )
 
 
-            self.questions = set(
-                data.get(
-                    "questions",
-                    [],
-                )
-            )
+# ============================================================
+# ADD QUESTION
+# ============================================================
+
+def add_question(
+    question: Question,
+) -> bool:
+    """
+    Add a question to history.
+
+    Returns:
+        True:
+            Question added successfully.
+
+        False:
+            Duplicate question found.
+    """
+
+    history = load_history()
+
+    if is_duplicate(
+        question,
+        history,
+    ):
+        return False
+
+    history.append(
+        question
+    )
+
+    save_history(
+        history
+    )
+
+    return True
+
+"""
+history.py
+
+Question history management for the
+Daily Aptitude Generator.
+
+Revision 2:
+- Load history
+- Save history
+- Add questions
+- Duplicate detection
+- Retention cleanup
+- Maximum record control
+- History utilities
+"""
+
+from __future__ import annotations
+
+import json
+
+from datetime import datetime, timedelta
+from pathlib import Path
+
+from models.question import Question
+from utils.config import settings
 
 
-            LOGGER.info(
-                "Loaded %s historical questions.",
-                len(self.questions),
-            )
+# ============================================================
+# HISTORY PATH
+# ============================================================
+
+def get_history_file() -> Path:
+    """
+    Return history file path.
+
+    Creates history directory automatically.
+    """
+
+    history_dir = settings.paths.history_dir
+
+    history_dir.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    return history_dir / settings.history.filename
 
 
-        except (
-            json.JSONDecodeError,
-            OSError,
-        ) as error:
+# ============================================================
+# HISTORY STATUS
+# ============================================================
 
-            LOGGER.error(
-                "Unable to load history: %s",
-                error,
-            )
+def is_history_enabled() -> bool:
+    """
+    Check whether history tracking is enabled.
+    """
 
-            self.questions = set()
+    return settings.history.enabled
+
+
+# ============================================================
+# LOAD HISTORY
+# ============================================================
+
+def load_history() -> list[Question]:
+    """
+    Load questions from history file.
+    """
+
+    if not is_history_enabled():
+        return []
+
+    file_path = get_history_file()
+
+    if not file_path.exists():
+        return []
+
+    try:
+        with file_path.open(
+            "r",
+            encoding="utf-8",
+        ) as file:
+
+            data = json.load(file)
+
+    except (
+        json.JSONDecodeError,
+        OSError,
+    ):
+        return []
+
+    return [
+        Question.from_dict(item)
+        for item in data
+    ]
+
+
+# ============================================================
+# SAVE HISTORY
+# ============================================================
+
+def save_history(
+    questions: list[Question],
+) -> None:
+    """
+    Save questions after cleanup.
+    """
+
+    if not is_history_enabled():
+        return
+
+    questions = cleanup_history(
+        questions
+    )
+
+    file_path = get_history_file()
+
+    with file_path.open(
+        "w",
+        encoding="utf-8",
+    ) as file:
+
+        json.dump(
+            [
+                question.to_dict()
+                for question in questions
+            ],
+            file,
+            indent=4,
+            ensure_ascii=False,
+        )
+
+
+# ============================================================
+# DUPLICATE CHECK
+# ============================================================
+
+def is_duplicate(
+    question: Question,
+    history: list[Question],
+) -> bool:
+    """
+    Check duplicate question using fingerprint.
+    """
+
+    return any(
+        item.fingerprint
+        == question.fingerprint
+        for item in history
+    )
+
+
+# ============================================================
+# ADD QUESTION
+# ============================================================
+
+def add_question(
+    question: Question,
+) -> bool:
+    """
+    Add question to history.
+
+    Returns:
+        True  -> Added
+        False -> Duplicate
+    """
+
+    if not is_history_enabled():
+        return True
+
+    history = load_history()
+
+    if is_duplicate(
+        question,
+        history,
+    ):
+        return False
+
+    history.append(
+        question
+    )
+
+    save_history(
+        history
+    )
+
+    return True
+
+
+# ============================================================
+# CLEANUP
+# ============================================================
+
+def cleanup_history(
+    questions: list[Question],
+) -> list[Question]:
+    """
+    Remove expired records and
+    maintain maximum history size.
+    """
+
+    expiry_date = (
+        datetime.now()
+        -
+        timedelta(
+            days=settings.history.retain_days
+        )
+    )
+
+    filtered_questions = [
+        question
+        for question in questions
+        if question.created_at >= expiry_date
+    ]
+
+
+    return filtered_questions[
+        -settings.history.max_records:
+    ]
+
+
+# ============================================================
+# RECENT QUESTIONS
+# ============================================================
+
+def get_recent_questions(
+    days: int = 7,
+) -> list[Question]:
+    """
+    Return questions generated within
+    specified number of days.
+    """
+
+    cutoff = (
+        datetime.now()
+        -
+        timedelta(days=days)
+    )
+
+    return [
+        question
+        for question in load_history()
+        if question.created_at >= cutoff
+    ]
+
+
+# ============================================================
+# CLEAR HISTORY
+# ============================================================
+
+def clear_history() -> None:
+    """
+    Remove complete history file.
+    """
+
+    file_path = get_history_file()
+
+    if file_path.exists():
+        file_path.unlink()
