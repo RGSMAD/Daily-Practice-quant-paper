@@ -10,7 +10,7 @@ from dataclasses import dataclass, asdict
 from datetime import datetime
 from typing import Any
 
-from models.enums import Difficulty, QuestionType
+from src.models.enums import Difficulty, QuestionType
 
 
 @dataclass(slots=True)
