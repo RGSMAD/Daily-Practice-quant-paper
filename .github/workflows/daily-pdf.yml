@@ -87,7 +87,8 @@ jobs:
         run: |
           pwd
           ls -la
-          ls -la config.yaml
+          echo "Searching config.yaml..."
+          find . -name "config.yaml" -print
 
       # --------------------------------------------------
       # Generate PDFs
