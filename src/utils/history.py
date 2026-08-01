@@ -168,14 +168,6 @@ def add_question(
 
     return True
 
-import json
-
-from datetime import datetime, timedelta
-from pathlib import Path
-
-from src.models.question import Question
-from src.config import settings
-
 
 # ============================================================
 # HISTORY PATH
