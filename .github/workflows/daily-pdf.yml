@@ -102,7 +102,7 @@ jobs:
       # --------------------------------------------------
       # Persist Question History
       # --------------------------------------------------
-
+      
       - name: Commit Updated History
         if: always()
 
@@ -122,7 +122,9 @@ jobs:
           -m "Update aptitude question history"
 
 
-          git push
+          git pull --rebase origin main
+
+          git push origin main
 
 
       # --------------------------------------------------
