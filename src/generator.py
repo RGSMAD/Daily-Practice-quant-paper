@@ -13,8 +13,6 @@ Responsible for:
 
 from __future__ import annotations
 
-import random
-
 from pathlib import Path
 from typing import List, Tuple
 
@@ -74,10 +72,6 @@ class AptitudeGenerator:
     ]:
         """
         Generate daily aptitude PDFs.
-
-        Returns:
-            Tuple containing question PDF
-            path and answer PDF path.
         """
 
         LOGGER.info(
@@ -166,15 +160,16 @@ class AptitudeGenerator:
         self,
     ) -> List[Question]:
         """
-        Generate required number of
-        unique aptitude questions.
+        Generate the exact configured number
+        of unique questions.
 
-        Duplicate questions found in:
-        - history
-        - current generation batch
+        Question order is preserved so that
+        questions remain grouped by generator
+        type in the PDF.
 
-        are rejected and replaced
-        with newly generated questions.
+        Duplicate questions found in history
+        or the current batch are rejected and
+        replaced by newly generated questions.
         """
 
         required_count = (
@@ -192,10 +187,6 @@ class AptitudeGenerator:
                 self.question_bank.generate()
             )
 
-            random.shuffle(
-                question_pool
-            )
-
 
             for question in question_pool:
 
@@ -209,7 +200,7 @@ class AptitudeGenerator:
                 ):
 
                     LOGGER.info(
-                        "Duplicate question rejected. Generating replacement."
+                        "Duplicate question rejected."
                     )
 
                     continue
@@ -261,8 +252,8 @@ class AptitudeGenerator:
     @staticmethod
     def _get_required_question_count() -> int:
         """
-        Calculate total number of
-        daily questions from configuration.
+        Calculate total configured
+        daily question count.
         """
 
         return (
