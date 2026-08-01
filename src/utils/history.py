@@ -14,7 +14,7 @@ Daily Aptitude Generator.
 - Maximum record control
 - History utilities
 """
-"""
+
 
 
 from __future__ import annotations
