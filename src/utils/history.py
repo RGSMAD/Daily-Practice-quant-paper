@@ -420,3 +420,43 @@ def clear_history() -> None:
 
     if file_path.exists():
         file_path.unlink()
+
+
+
+class HistoryManager:
+    """
+    Manages question history.
+    """
+
+    def load(self) -> list[Question]:
+        return load_history()
+
+    def save(
+        self,
+        questions: list[Question],
+    ) -> None:
+        save_history(questions)
+
+    def add(
+        self,
+        question: Question,
+    ) -> bool:
+        return add_question(question)
+
+    def is_duplicate(
+        self,
+        question: Question,
+    ) -> bool:
+        return is_duplicate(
+            question,
+            load_history(),
+        )
+
+    def recent(
+        self,
+        days: int = 7,
+    ) -> list[Question]:
+        return get_recent_questions(days)
+
+    def clear(self) -> None:
+        clear_history()
