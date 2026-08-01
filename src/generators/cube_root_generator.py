@@ -41,6 +41,10 @@ class CubeRootGenerator:
         )
 
 
+    # =========================================================
+    # MAIN GENERATOR
+    # =========================================================
+
     def generate(self) -> List[Question]:
         """
         Generate cube root questions.
@@ -57,64 +61,93 @@ class CubeRootGenerator:
 
         while len(questions) < self.question_count:
 
-            number = random.randint(
+            root_value = random.randint(
                 self.minimum,
                 self.maximum,
             )
 
 
-            if number in generated_numbers:
+            if root_value in generated_numbers:
 
                 continue
 
 
-            generated_numbers.add(number)
+            generated_numbers.add(
+                root_value
+            )
 
 
             cube_value = (
-                number ** 3
+                root_value ** 3
             )
 
 
             questions.append(
+
                 Question(
+
                     id=len(questions) + 1,
 
+
                     question_type=(
+
                         QuestionType.CUBE_ROOT
+
                     ),
+
 
                     difficulty=(
-                        self._get_difficulty(number)
+
+                        self._get_difficulty(
+                            root_value
+                        )
+
                     ),
 
-                    # Updated aptitude sheet style
+
+                    # LaTeX cube root rendering
                     question=(
-                        f"∛{cube_value} = ?"
+
+                        f"\\sqrt[3]{{{cube_value}}} = ?"
+
                     ),
+
 
                     answer=str(
-                        number
+                        root_value
                     ),
+
 
                     explanation=(
-                        f"∛{cube_value} = {number}"
+
+                        f"\\sqrt[3]{{{cube_value}}} = {root_value}"
+
                     ),
 
+
                     topic="Cube Roots",
+
                 )
+
             )
 
 
         LOGGER.info(
+
             "Generated %s cube root questions.",
+
             len(questions),
+
         )
 
 
         return questions
 
 
+
+    # =========================================================
+    # DIFFICULTY
+    # =========================================================
 
     @staticmethod
     def _get_difficulty(

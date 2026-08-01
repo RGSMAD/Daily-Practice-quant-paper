@@ -1,13 +1,15 @@
 """
 simplification_generator.py
 
-Generates simplification-based aptitude questions.
+Generates banking aptitude simplification questions.
 
 Patterns:
-- Basic BODMAS
+- BODMAS simplification
 - Missing value
-- Equation based
-- Fraction / Decimal
+- Percentage approximation
+- Decimal simplification
+- Fraction based simplification
+- Square based simplification
 - Approximation
 """
 
@@ -31,6 +33,7 @@ class SimplificationGenerator:
     Generates simplification aptitude questions.
     """
 
+
     def __init__(self) -> None:
 
         self.question_count = (
@@ -48,6 +51,7 @@ class SimplificationGenerator:
         self.generated: set[str] = set()
 
 
+
     # =========================================================
     # MAIN GENERATOR
     # =========================================================
@@ -56,15 +60,18 @@ class SimplificationGenerator:
 
         questions: List[Question] = []
 
+
         generators: List[Tuple[Callable, int]] = [
 
-            (self._generate_basic_bodmas, 6),
+            (self._generate_bodmas, 5),
 
-            (self._generate_missing_value, 5),
+            (self._generate_missing_value, 4),
 
-            (self._generate_equation_based, 4),
+            (self._generate_percentage, 4),
 
-            (self._generate_fraction_decimal, 3),
+            (self._generate_decimal, 3),
+
+            (self._generate_fraction, 2),
 
             (self._generate_approximation, 2),
 
@@ -75,11 +82,11 @@ class SimplificationGenerator:
 
             for _ in range(count):
 
-                question = self._create_question(
-                    generator()
+                questions.append(
+                    self._create_question(
+                        generator()
+                    )
                 )
-
-                questions.append(question)
 
 
         random.shuffle(
@@ -101,8 +108,9 @@ class SimplificationGenerator:
         return questions
 
 
+
     # =========================================================
-    # QUESTION BUILDER
+    # BUILDER
     # =========================================================
 
     def _create_question(
@@ -135,155 +143,210 @@ class SimplificationGenerator:
         )
 
 
+
     # =========================================================
-    # TYPE 1 : BASIC BODMAS
+    # BODMAS
     # =========================================================
 
-    def _generate_basic_bodmas(
+    def _generate_bodmas(
         self,
     ) -> Tuple[str, str, Difficulty]:
 
-        while True:
-
-            a = self._number()
-            b = self._number()
-            c = random.randint(2, 20)
-
-            op1 = random.choice(
-                ["+", "-", "*", "/"]
-            )
-
-            op2 = random.choice(
-                ["+", "-", "*", "/"]
-            )
+        a = random.randint(10, 100)
+        b = random.randint(5, 50)
+        c = random.randint(2, 20)
+        d = random.randint(2, 15)
 
 
-            if op2 == "/" and c == 0:
-                continue
+        patterns = [
+
+            (
+                f"{a} + {b} × {c} - {d}",
+                a + (b * c) - d,
+            ),
+
+            (
+                f"({a} + {b}) × {c} - {d}",
+                (a + b) * c - d,
+            ),
+
+            (
+                f"{a} × {b} ÷ {c} + {d}",
+                (a * b) // c + d,
+            ),
+
+        ]
 
 
-            expression = (
-                f"{a} {op1} {b} {op2} {c}"
-            )
-
-
-            try:
-
-                answer = self._safe_eval(
-                    expression
-                )
-
-            except Exception:
-
-                continue
-
-
-            return (
-                f"{expression} = ?",
-                str(answer),
-                Difficulty.MEDIUM,
-            )
-
-
-    # =========================================================
-    # TYPE 2 : MISSING VALUE
-    # =========================================================
-
-    def _generate_missing_value(
-        self,
-    ) -> Tuple[str, str, Difficulty]:
-
-        base = random.randint(
-            20,
-            100,
+        expression, answer = random.choice(
+            patterns
         )
 
-        multiplier = random.randint(
-            2,
-            10,
-        )
-
-
-        answer = base
-
-
-        if random.choice([True, False]):
-
-            total = (
-                base * multiplier
-            )
-
-            return (
-                f"? × {multiplier} = {total}",
-                str(answer),
-                Difficulty.MEDIUM,
-            )
-
-
-        total = (
-            base + multiplier
-        )
 
         return (
-            f"? + {multiplier} = {total}",
+
+            f"{expression} = ?",
+
             str(answer),
-            Difficulty.EASY,
-        )
-
-
-    # =========================================================
-    # TYPE 3 : EQUATION BASED
-    # =========================================================
-
-    def _generate_equation_based(
-        self,
-    ) -> Tuple[str, str, Difficulty]:
-
-        value = random.randint(
-            10,
-            50,
-        )
-
-        multiplier = random.randint(
-            2,
-            8,
-        )
-
-
-        result = (
-            value * multiplier
-        )
-
-
-        return (
-
-            f"? × {multiplier} = {result}",
-
-            str(value),
 
             Difficulty.MEDIUM,
 
         )
 
 
+
     # =========================================================
-    # TYPE 4 : FRACTION / DECIMAL
+    # MISSING VALUE
     # =========================================================
 
-    def _generate_fraction_decimal(
+    def _generate_missing_value(
         self,
     ) -> Tuple[str, str, Difficulty]:
 
-        number = random.choice(
-            [100, 200, 300, 400, 500]
+
+        value = random.randint(
+            20,
+            200,
         )
+
+
+        multiplier = random.randint(
+            2,
+            20,
+        )
+
+
+        total = value * multiplier
+
+
+        return (
+
+            f"({value} × {multiplier}) - ? = {total - value}",
+
+            str(value),
+
+            Difficulty.HARD,
+
+        )
+
+
+
+    # =========================================================
+    # PERCENTAGE
+    # =========================================================
+
+    def _generate_percentage(
+        self,
+    ) -> Tuple[str, str, Difficulty]:
+
+
+        percent = random.choice(
+            [
+                9.99,
+                19.98,
+                39.98,
+                49.98,
+                50.02,
+            ]
+        )
+
+
+        number = random.choice(
+            [
+                498,
+                502,
+                998,
+                1002,
+            ]
+        )
+
+
+        answer = round(
+            percent * number / 100
+        )
+
+
+        return (
+
+            f"{percent}% of {number} = ?",
+
+            str(answer),
+
+            Difficulty.HARD,
+
+        )
+
+
+
+    # =========================================================
+    # DECIMAL
+    # =========================================================
+
+    def _generate_decimal(
+        self,
+    ) -> Tuple[str, str, Difficulty]:
+
+
+        numbers = [
+            round(
+                random.uniform(10, 99),
+                1
+            )
+            for _ in range(5)
+        ]
+
+
+        answer = round(
+            sum(numbers),
+            1
+        )
+
+
+        expression = (
+            " + ".join(
+                str(x)
+                for x in numbers
+            )
+        )
+
+
+        return (
+
+            f"{expression} = ?",
+
+            str(answer),
+
+            Difficulty.MEDIUM,
+
+        )
+
+
+
+    # =========================================================
+    # FRACTION
+    # =========================================================
+
+    def _generate_fraction(
+        self,
+    ) -> Tuple[str, str, Difficulty]:
+
+
+        number = random.choice(
+            [
+                200,
+                300,
+                400,
+                500,
+            ]
+        )
+
 
         fraction = random.choice(
             [
                 "1/2",
                 "1/4",
-                "3/5",
                 "2/5",
+                "3/5",
             ]
         )
 
@@ -295,14 +358,9 @@ class SimplificationGenerator:
         )
 
 
-        expression = (
-            f"{fraction} of {number}"
-        )
-
-
         return (
 
-            f"{expression} = ?",
+            f"{fraction} of {number} = ?",
 
             str(int(result)),
 
@@ -311,94 +369,47 @@ class SimplificationGenerator:
         )
 
 
+
     # =========================================================
-    # TYPE 5 : APPROXIMATION
+    # APPROXIMATION
     # =========================================================
 
     def _generate_approximation(
         self,
     ) -> Tuple[str, str, Difficulty]:
 
-        number = random.choice(
-            [
-                (49.8, 20),
-                (99.5, 10),
-                (19.8, 50),
-            ]
-        )
+
+        patterns = [
+
+            (
+                "12.2 + 12.6 + 12.8 + 12.3 + 12.1",
+                62,
+            ),
+
+            (
+                "49.8 × 20",
+                996,
+            ),
+
+            (
+                "39.98% of 1002",
+                401,
+            ),
+
+        ]
 
 
-        value = round(
-            number[0] * number[1]
+        expression, answer = random.choice(
+            patterns
         )
 
 
         return (
 
-            f"{number[0]} × {number[1]} ≈ ?",
+            f"{expression} ≈ ?",
 
-            str(value),
+            str(answer),
 
             Difficulty.HARD,
 
         )
-
-
-    # =========================================================
-    # HELPERS
-    # =========================================================
-
-    def _number(self) -> int:
-
-        return random.randint(
-            self.minimum,
-            self.maximum,
-        )
-
-
-    @staticmethod
-    def _safe_eval(
-        expression: str,
-    ) -> int:
-
-        allowed = {
-
-            "+": lambda x, y: x + y,
-
-            "-": lambda x, y: x - y,
-
-            "*": lambda x, y: x * y,
-
-            "/": lambda x, y: x / y,
-
-        }
-
-
-        tokens = expression.split()
-
-
-        result = int(tokens[0])
-
-
-        index = 1
-
-
-        while index < len(tokens):
-
-            operator = tokens[index]
-
-            value = int(tokens[index + 1])
-
-
-            result = int(
-                allowed[operator](
-                    result,
-                    value,
-                )
-            )
-
-
-            index += 2
-
-
-        return result
