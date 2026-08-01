@@ -2,6 +2,7 @@
 # Daily Aptitude Generator Configuration
 # ============================================================
 
+
 # ============================================================
 # Application
 # ============================================================
@@ -10,6 +11,8 @@ app:
   app_name: "Daily Aptitude Generator"
   version: "1.0.0"
   timezone: "Asia/Kolkata"
+
+
 
 # ============================================================
 # PDF Configuration
@@ -20,8 +23,8 @@ pdf:
   author: "Daily Aptitude Generator"
   subject: "Quantitative Aptitude"
 
-  font_name: "Helvetica"
-  font_bold: "Helvetica-Bold"
+  font_name: "DejaVuSans"
+  font_bold: "DejaVuSans-Bold"
 
   font_size: 11
   heading_size: 18
@@ -29,64 +32,96 @@ pdf:
   margin: 40
 
   show_page_numbers: true
+
   include_logo: true
   logo_name: "logo.png"
 
   question_pdf_name: "Daily_Practice.pdf"
   answer_pdf_name: "Daily_Practice_Answers.pdf"
 
+
+
 # ============================================================
 # Question Configuration
 # ============================================================
 
 questions:
+
+  # Number practice
   square_questions: 10
-  cube_questions: 5
+  cube_questions: 10
+
+
+  # Root practice
   square_root_questions: 10
   cube_root_questions: 10
-  simplification_questions: 15
+
+
+  # Simplification practice
+  simplification_questions: 20
+
+
+  # Number series
   series_questions: 15
 
-  perfect_square_roots: 8
-  non_perfect_square_roots: 2
+
 
 # ============================================================
 # Number Range Configuration
 # ============================================================
 
 ranges:
+
+
+  # Squares
   square_min: 10
-  square_max: 999
+  square_max: 1000
 
+
+  # Cubes
   cube_min: 10
-  cube_max: 999
+  cube_max: 1000
 
+
+  # Perfect square roots
   perfect_square_root_min: 10
-  perfect_square_root_max: 50
+  perfect_square_root_max: 1000
 
+
+  # Perfect cube roots
   perfect_cube_root_min: 2
-  perfect_cube_root_max: 20
+  perfect_cube_root_max: 200
 
+
+  # Simplification operands
   simplification_min_operand: 10
   simplification_max_operand: 500
 
+
+  # Series
   series_min_start: 1
   series_max_start: 100
+
+
 
 # ============================================================
 # Difficulty Distribution
 # ============================================================
 
 difficulty:
+
   easy_percentage: 40
   medium_percentage: 40
   hard_percentage: 20
+
+
 
 # ============================================================
 # Email Configuration
 # ============================================================
 
 email:
+
   smtp_server: "smtp.gmail.com"
   smtp_port: 587
 
@@ -105,11 +140,14 @@ email:
   password_env: "EMAIL_PASSWORD"
   receiver_env: "RECEIVER_EMAIL"
 
+
+
 # ============================================================
 # History Configuration
 # ============================================================
 
 history:
+
   enabled: true
 
   active_file: "active.json"
@@ -118,21 +156,28 @@ history:
 
   archive_monthly: true
 
+
+
 # ============================================================
 # Weekly Revision Configuration
 # ============================================================
 
 revision:
+
   enabled: true
 
   revision_day: "Sunday"
 
   questions_per_topic: 5
 
+
+
 # ============================================================
 # Logging Configuration
 # ============================================================
 
 logging:
+
   level: "INFO"
+
   filename: "generator.log"
