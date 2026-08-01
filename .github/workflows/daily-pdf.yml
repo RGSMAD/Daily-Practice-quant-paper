@@ -1,0 +1,137 @@
+name: Daily Aptitude Generator
+
+on:
+  schedule:
+    # Runs every day at 05:00 IST (23:30 UTC previous day)
+    - cron: "30 23 * * *"
+
+  workflow_dispatch:
+
+
+permissions:
+  contents: write
+
+
+jobs:
+  generate-daily-pdf:
+
+    name: Generate Daily Aptitude PDFs
+
+    runs-on: ubuntu-latest
+
+
+    env:
+      EMAIL_USER: ${{ secrets.EMAIL_USER }}
+      EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+      RECEIVER_EMAIL: ${{ secrets.RECEIVER_EMAIL }}
+
+
+    steps:
+
+      # --------------------------------------------------
+      # Checkout Repository
+      # --------------------------------------------------
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+
+      # --------------------------------------------------
+      # Python Setup
+      # --------------------------------------------------
+
+      - name: Set Up Python
+        uses: actions/setup-python@v5
+
+        with:
+          python-version: "3.12"
+
+
+      # --------------------------------------------------
+      # Dependencies
+      # --------------------------------------------------
+
+      - name: Upgrade pip
+        run: |
+          python -m pip install --upgrade pip
+
+
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+
+
+      # --------------------------------------------------
+      # Debug / Verification
+      # --------------------------------------------------
+
+      - name: Verify Project Structure
+        run: |
+          python --version
+          pip --version
+          ls -R
+
+
+      # --------------------------------------------------
+      # Generate PDFs
+      # --------------------------------------------------
+
+      - name: Generate Daily Aptitude PDFs
+        run: |
+          python -m src.main
+
+
+      # --------------------------------------------------
+      # Persist Question History
+      # --------------------------------------------------
+
+      - name: Commit Updated History
+        if: always()
+
+        run: |
+
+          git config --global user.name "github-actions[bot]"
+
+          git config --global user.email \
+          "41898282+github-actions[bot]@users.noreply.github.com"
+
+
+          git add history/questions_history.json
+
+
+          git diff --cached --quiet || \
+          git commit \
+          -m "Update aptitude question history"
+
+
+          git push
+
+
+      # --------------------------------------------------
+      # Upload Generated PDFs
+      # --------------------------------------------------
+
+      - name: Upload Practice PDF
+        if: always()
+
+        uses: actions/upload-artifact@v4
+
+        with:
+          name: Daily_Practice
+
+          path: output/Daily_Practice.pdf
+
+          if-no-files-found: warn
+
+
+      - name: Upload Answer PDF
+        if: always()
+
+        uses: actions/upload-artifact@v4
+
+        with:
+          name: Daily_Practice_Answers
+
+          path: output/Daily_Practice_Answers.pdf
+
+          if-no-files-found: warn
