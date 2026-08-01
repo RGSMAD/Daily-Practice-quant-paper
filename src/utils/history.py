@@ -4,11 +4,16 @@ history.py
 Basic question history management for the
 Daily Aptitude Generator.
 
-Revision 1:
+
 - Load history
 - Save history
 - Add questions
 - Basic duplicate detection
+- Duplicate detection
+- Retention cleanup
+- Maximum record control
+- History utilities
+"""
 """
 
 
@@ -162,22 +167,6 @@ def add_question(
     )
 
     return True
-
-"""
-history.py
-
-Question history management for the
-Daily Aptitude Generator.
-
-Revision 2:
-- Load history
-- Save history
-- Add questions
-- Duplicate detection
-- Retention cleanup
-- Maximum record control
-- History utilities
-"""
 
 import json
 
