@@ -80,22 +80,22 @@ ranges:
 
   # Squares
   square_min: 10
-  square_max: 1000
+  square_max: 500
 
 
   # Cubes
   cube_min: 10
-  cube_max: 1000
+  cube_max: 250
 
 
   # Perfect square roots
   perfect_square_root_min: 10
-  perfect_square_root_max: 1000
+  perfect_square_root_max: 300
 
 
   # Perfect cube roots
   perfect_cube_root_min: 2
-  perfect_cube_root_max: 200
+  perfect_cube_root_max: 100
 
 
   # Simplification operands
