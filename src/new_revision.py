@@ -71,7 +71,7 @@ from src.utils.logger import get_logger
 
 # IMPORTANT:
 # Use the actual location of mailer.py in this project.
-from src.mailer import EmailSender
+from src.email.mailer import EmailSender
 
 
 LOGGER = get_logger(__name__)
