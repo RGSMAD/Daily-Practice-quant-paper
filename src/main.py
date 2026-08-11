@@ -26,7 +26,7 @@ from zoneinfo import ZoneInfo
 
 from src.config import settings
 from src.generator import AptitudeGenerator
-from src.new_revision import RevisionGenerator
+from src.new_revision import WeeklyRevisionGenerator
 from src.utils.logger import get_logger
 
 
