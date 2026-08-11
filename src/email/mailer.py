@@ -78,11 +78,13 @@ class EmailSender:
 
             subject:
                 Optional email subject.
-                Defaults to configured subject.
+                Falls back to settings.email.subject
+                when not provided.
 
             body:
                 Optional email body.
-                Defaults to configured body.
+                Falls back to settings.email.body
+                when not provided.
 
         Raises:
             ValueError:
@@ -99,8 +101,13 @@ class EmailSender:
             else settings.email.subject
         )
 
-        message["From"] = self.sender
-        message["To"] = self.recipient
+        message["From"] = (
+            self.sender
+        )
+
+        message["To"] = (
+            self.recipient
+        )
 
         message.set_content(
             body
@@ -149,7 +156,7 @@ class EmailSender:
             raise
 
     # =========================================================
-    # VALIDATION
+    # VALIDATE EMAIL CONFIGURATION
     # =========================================================
 
     def _validate_email_configuration(
@@ -183,7 +190,7 @@ class EmailSender:
             )
 
     # =========================================================
-    # ATTACHMENT
+    # ATTACH FILE
     # =========================================================
 
     @staticmethod
@@ -206,10 +213,8 @@ class EmailSender:
             file_path
         )
 
-        mime_type, _ = (
-            mimetypes.guess_type(
-                str(file_path)
-            )
+        mime_type, _ = mimetypes.guess_type(
+            str(file_path)
         )
 
         if mime_type:
@@ -223,8 +228,13 @@ class EmailSender:
 
         else:
 
-            main_type = "application"
-            sub_type = "octet-stream"
+            main_type = (
+                "application"
+            )
+
+            sub_type = (
+                "octet-stream"
+            )
 
         with file_path.open(
             "rb",
