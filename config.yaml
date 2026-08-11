@@ -1,4 +1,3 @@
-```yaml
 # ============================================================
 # Daily Aptitude Generator Configuration
 # ============================================================
@@ -175,4 +174,5 @@ revision:
 logging:
   level: "INFO"
   filename: "generator.log"
-```
+
+  
