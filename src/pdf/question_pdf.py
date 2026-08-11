@@ -1,7 +1,12 @@
+
 """
 question_pdf.py
 
-Generates the daily aptitude practice question PDF.
+Generates aptitude practice question PDFs.
+
+The same generator is used for:
+- Daily aptitude practice
+- Weekly revision practice
 """
 
 from __future__ import annotations
@@ -29,7 +34,6 @@ class QuestionPDFGenerator:
     Generates PDF containing aptitude questions.
     """
 
-
     def __init__(self) -> None:
         """
         Initialize PDF configuration.
@@ -39,10 +43,7 @@ class QuestionPDFGenerator:
 
         self.page_width, self.page_height = A4
 
-        self.margin = (
-            settings.pdf.margin
-        )
-
+        self.margin = settings.pdf.margin
 
     # =========================================================
     # FONT REGISTRATION
@@ -53,21 +54,48 @@ class QuestionPDFGenerator:
         Register Unicode fonts for mathematical symbols.
         """
 
-        pdfmetrics.registerFont(
-            TTFont(
-                "DejaVuSans",
-                "assets/fonts/DejaVuSans.ttf",
-            )
+        regular_font = (
+            settings.paths.assets_dir
+            / "fonts"
+            / "DejaVuSans.ttf"
         )
 
-
-        pdfmetrics.registerFont(
-            TTFont(
-                "DejaVuSans-Bold",
-                "assets/fonts/DejaVuSans-Bold.ttf",
-            )
+        bold_font = (
+            settings.paths.assets_dir
+            / "fonts"
+            / "DejaVuSans-Bold.ttf"
         )
 
+        if not regular_font.exists():
+            raise FileNotFoundError(
+                f"Regular font not found: {regular_font}"
+            )
+
+        if not bold_font.exists():
+            raise FileNotFoundError(
+                f"Bold font not found: {bold_font}"
+            )
+
+        if "DejaVuSans" not in pdfmetrics.getRegisteredFontNames():
+
+            pdfmetrics.registerFont(
+                TTFont(
+                    "DejaVuSans",
+                    str(regular_font),
+                )
+            )
+
+        if (
+            "DejaVuSans-Bold"
+            not in pdfmetrics.getRegisteredFontNames()
+        ):
+
+            pdfmetrics.registerFont(
+                TTFont(
+                    "DejaVuSans-Bold",
+                    str(bold_font),
+                )
+            )
 
     # =========================================================
     # MAIN PDF GENERATOR
@@ -77,53 +105,73 @@ class QuestionPDFGenerator:
         self,
         questions: List[Question],
         output_path: Path,
+        title: str | None = None,
     ) -> Path:
         """
         Generate question PDF.
+
+        Args:
+            questions:
+                Questions to include in the PDF.
+
+            output_path:
+                Destination PDF path.
+
+            title:
+                Optional PDF/header title.
+
+                If omitted, the configured daily
+                aptitude title is used.
+
+        Returns:
+            Path:
+                Generated PDF path.
         """
 
         LOGGER.info(
-            "Generating question PDF."
+            "Generating question PDF: %s",
+            output_path,
         )
-
 
         pdf = canvas.Canvas(
             str(output_path),
             pagesize=A4,
         )
 
-
         pdf.setTitle(
-            settings.pdf.title
+            title
+            if title is not None
+            else settings.pdf.title
         )
-
 
         pdf.setAuthor(
             settings.pdf.author
         )
 
-
         pdf.setSubject(
             settings.pdf.subject
         )
 
-
-        self._draw_header(
-            pdf
+        document_title = (
+            title
+            if title is not None
+            else settings.pdf.title
         )
 
+        self._draw_header(
+            pdf,
+            document_title,
+        )
 
         y_position = (
             self.page_height
             - self.margin * 2
         )
 
-
         for index, question in enumerate(
             questions,
             start=1,
         ):
-
 
             if y_position < 80:
 
@@ -133,17 +181,15 @@ class QuestionPDFGenerator:
 
                 pdf.showPage()
 
-
                 self._draw_header(
-                    pdf
+                    pdf,
+                    document_title,
                 )
-
 
                 y_position = (
                     self.page_height
                     - self.margin * 2
                 )
-
 
             formatted_question = (
                 self._format_math_symbols(
@@ -151,18 +197,15 @@ class QuestionPDFGenerator:
                 )
             )
 
-
             text = (
                 f"{index}. "
                 f"{formatted_question}"
             )
 
-
             pdf.setFont(
                 settings.pdf.font_name,
                 settings.pdf.font_size,
             )
-
 
             pdf.drawString(
                 self.margin,
@@ -170,29 +213,22 @@ class QuestionPDFGenerator:
                 text,
             )
 
-
             y_position -= (
                 settings.pdf.line_spacing
             )
-
 
         self._add_page_number(
             pdf
         )
 
-
         pdf.save()
-
 
         LOGGER.info(
             "Question PDF created: %s",
             output_path,
         )
 
-
         return output_path
-
-
 
     # =========================================================
     # MATH FORMATTER
@@ -207,11 +243,14 @@ class QuestionPDFGenerator:
         into PDF-friendly symbols.
         """
 
-
+        # -----------------------------------------------------
         # Cube root
+        #
         # \sqrt[3]{4096}
-        # becomes
+        #
+        # becomes:
         # ³√4096
+        # -----------------------------------------------------
 
         text = re.sub(
             r"\\sqrt\[3\]\{(\d+)\}",
@@ -219,11 +258,14 @@ class QuestionPDFGenerator:
             text,
         )
 
-
+        # -----------------------------------------------------
         # Square root
+        #
         # \sqrt{625}
-        # becomes
+        #
+        # becomes:
         # √625
+        # -----------------------------------------------------
 
         text = re.sub(
             r"\\sqrt\{(\d+)\}",
@@ -231,10 +273,7 @@ class QuestionPDFGenerator:
             text,
         )
 
-
         return text
-
-
 
     # =========================================================
     # HEADER
@@ -243,25 +282,29 @@ class QuestionPDFGenerator:
     def _draw_header(
         self,
         pdf: canvas.Canvas,
+        title: str,
     ) -> None:
         """
         Draw PDF header.
-        """
 
+        Args:
+            pdf:
+                ReportLab canvas object.
+
+            title:
+                Header title.
+        """
 
         pdf.setFont(
             settings.pdf.font_bold,
             settings.pdf.heading_size,
         )
 
-
         pdf.drawString(
             self.margin,
             self.page_height - self.margin,
-            settings.pdf.title,
+            title,
         )
-
-
 
     # =========================================================
     # PAGE NUMBER
@@ -275,22 +318,18 @@ class QuestionPDFGenerator:
         Add page number.
         """
 
-
         if not settings.pdf.show_page_numbers:
 
             return
-
 
         page_number = (
             pdf.getPageNumber()
         )
 
-
         pdf.setFont(
             settings.pdf.font_name,
             9,
         )
-
 
         pdf.drawRightString(
             self.page_width - self.margin,
