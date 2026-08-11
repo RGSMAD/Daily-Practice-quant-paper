@@ -7,26 +7,60 @@ Daily Aptitude Generator.
 
 Sunday workflow:
 
-- Read questions generated during the previous six days.
-- Select the configured number of questions from each topic.
-- Generate the weekly revision question PDF.
-- Generate the weekly revision answer PDF.
-- Send both PDFs by email.
-- Clear the six-day history only after the complete
-  revision workflow succeeds.
+    Monday - Saturday
+        |
+        | Questions are generated normally
+        | Questions are stored in active history
+        v
+    active.json
+        |
+        | Sunday
+        v
+    Read previous six days
+        |
+        +--> 10 Squares
+        +--> 10 Cubes
+        +--> 10 Square Roots
+        +--> 10 Cube Roots
+        +--> 20 Simplification
+        +--> 15 Number Series
+        |
+        v
+    75 revision questions
+        |
+        +--> Question PDF
+        +--> Answer PDF
+        |
+        v
+    Send email
+        |
+        v
+    Successful completion
+        |
+        v
+    Clear active history
 
-No new questions are generated on Sunday.
+Important:
+
+    Sunday does NOT generate new aptitude questions.
+
+    Every Sunday revision question must come from
+    the questions generated during the previous six
+    calendar days.
+
+    History is cleared only after the complete
+    revision workflow succeeds.
 """
 
 from __future__ import annotations
 
 import random
+
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Tuple
 
 from src.config import settings
-from src.email.mailer import EmailSender
 from src.models.answer import Answer
 from src.models.enums import QuestionType
 from src.models.question import Question
@@ -35,18 +69,23 @@ from src.pdf.question_pdf import QuestionPDFGenerator
 from src.utils.history import HistoryManager
 from src.utils.logger import get_logger
 
+# IMPORTANT:
+# Use the actual location of mailer.py in this project.
+from src.mailer import EmailSender
+
 
 LOGGER = get_logger(__name__)
 
 
 class WeeklyRevisionGenerator:
     """
-    Coordinates the complete Sunday weekly revision workflow.
+    Coordinates the complete Sunday weekly
+    revision workflow.
 
     Sunday does not generate fresh questions.
 
-    Instead, it selects questions from the previous
-    six days of generated history.
+    Instead, it selects questions from the
+    previous six days of generated history.
     """
 
     # =========================================================
@@ -57,6 +96,17 @@ class WeeklyRevisionGenerator:
 
     REVISION_ANSWER_TITLE = (
         "Weekly Aptitude Revision Answer Key"
+    )
+
+    REVISION_EMAIL_SUBJECT = (
+        "Weekly Aptitude Revision"
+    )
+
+    REVISION_EMAIL_BODY = (
+        "Hello,\n\n"
+        "Please find this week's aptitude "
+        "revision paper attached.\n\n"
+        "Happy Learning!"
     )
 
     # =========================================================
@@ -70,14 +120,18 @@ class WeeklyRevisionGenerator:
 
         self.history = HistoryManager()
 
-        self.question_pdf = QuestionPDFGenerator()
+        self.question_pdf = (
+            QuestionPDFGenerator()
+        )
 
-        self.answer_pdf = AnswerPDFGenerator()
+        self.answer_pdf = (
+            AnswerPDFGenerator()
+        )
 
         self.email_sender = EmailSender()
 
     # =========================================================
-    # MAIN WORKFLOW
+    # MAIN REVISION WORKFLOW
     # =========================================================
 
     def generate(
@@ -86,15 +140,23 @@ class WeeklyRevisionGenerator:
         """
         Generate the Sunday weekly revision PDFs.
 
+        This method:
+
+            1. Reads the previous six days of history.
+            2. Selects exactly 75 questions.
+            3. Creates the question PDF.
+            4. Creates the answer PDF.
+
+        History is NOT cleared here.
+
         Returns:
             Tuple[Path, Path]:
-                Revision question PDF path and
-                revision answer PDF path.
+                Question PDF path and answer PDF path.
 
         Raises:
             RuntimeError:
-                If the six-day history does not contain
-                enough questions for the complete revision.
+                If insufficient historical questions
+                are available.
         """
 
         LOGGER.info(
@@ -127,43 +189,51 @@ class WeeklyRevisionGenerator:
             )
         )
 
-        output_dir = (
+        output_directory = (
             settings.paths.output_dir
         )
 
-        output_dir.mkdir(
+        output_directory.mkdir(
             parents=True,
             exist_ok=True,
         )
 
         question_pdf_path = (
-            output_dir
+            output_directory
             / self._revision_question_pdf_name()
         )
 
         answer_pdf_path = (
-            output_dir
+            output_directory
             / self._revision_answer_pdf_name()
         )
 
         # -----------------------------------------------------
-        # Generate revision question PDF
+        # Generate question PDF
         # -----------------------------------------------------
 
         self.question_pdf.generate(
             revision_questions,
             question_pdf_path,
-            title=self.REVISION_TITLE,
+        )
+
+        LOGGER.info(
+            "Weekly revision question PDF generated: %s",
+            question_pdf_path,
         )
 
         # -----------------------------------------------------
-        # Generate revision answer PDF
+        # Generate answer PDF
         # -----------------------------------------------------
 
         self.answer_pdf.generate(
             answers,
             answer_pdf_path,
-            title=self.REVISION_ANSWER_TITLE,
+        )
+
+        LOGGER.info(
+            "Weekly revision answer PDF generated: %s",
+            answer_pdf_path,
         )
 
         LOGGER.info(
@@ -186,51 +256,50 @@ class WeeklyRevisionGenerator:
         Generate and send the Sunday revision paper.
 
         History is cleared ONLY after:
-        - revision questions are selected,
-        - both PDFs are generated,
-        - email is successfully sent.
 
-        If any step fails, history remains untouched.
+            1. Revision questions are successfully selected.
+            2. Question PDF is successfully generated.
+            3. Answer PDF is successfully generated.
+            4. Email is successfully sent.
+
+        If any step fails, the active history remains
+        untouched.
         """
+
+        LOGGER.info(
+            "Starting complete Sunday revision workflow."
+        )
 
         question_pdf, answer_pdf = (
             self.generate()
         )
 
         # -----------------------------------------------------
-        # Send revision paper
+        # Send both PDFs
         # -----------------------------------------------------
 
         self.email_sender.send(
             [
                 question_pdf,
                 answer_pdf,
-            ],
-            subject=(
-                "Weekly Aptitude Revision"
-            ),
-            body=(
-                "Hello,\n\n"
-                "Please find this week's aptitude "
-                "revision paper attached.\n\n"
-                "Happy Learning!"
-            ),
+            ]
         )
 
         LOGGER.info(
-            "Weekly revision email completed successfully."
+            "Weekly revision email sent successfully."
         )
 
         # -----------------------------------------------------
-        # IMPORTANT:
-        #
-        # History is cleared only after the complete workflow
+        # Cleanup only after the complete workflow
         # succeeds.
-        #
-        # This starts the history cycle for the next week.
         # -----------------------------------------------------
 
         self._cleanup_after_revision()
+
+        LOGGER.info(
+            "Sunday weekly revision workflow completed "
+            "successfully."
+        )
 
     # =========================================================
     # REVISION QUESTION SELECTION
@@ -243,16 +312,16 @@ class WeeklyRevisionGenerator:
         Select revision questions from the previous
         six calendar days.
 
-        The required distribution is:
+        Required distribution:
 
-        Squares             : 10
-        Cubes               : 10
-        Square Roots        : 10
-        Cube Roots          : 10
-        Simplification      : 20
-        Number Series       : 15
+            Squares             : 10
+            Cubes               : 10
+            Square Roots        : 10
+            Cube Roots          : 10
+            Simplification      : 20
+            Number Series       : 15
 
-        Total                : 75
+            Total               : 75
 
         No newly generated questions are used.
         """
@@ -277,8 +346,8 @@ class WeeklyRevisionGenerator:
         )
 
         LOGGER.info(
-            "Found %s questions in previous "
-            "six days of history.",
+            "Found %s historical questions "
+            "from previous six days.",
             len(history_questions),
         )
 
@@ -294,29 +363,37 @@ class WeeklyRevisionGenerator:
 
         selected_questions: List[Question] = []
 
-        for question_type, required_count in (
-            required_counts.items()
-        ):
+        # -----------------------------------------------------
+        # Select the configured number for each topic.
+        # -----------------------------------------------------
 
-            available = (
+        for (
+            question_type,
+            required_count,
+        ) in required_counts.items():
+
+            available_questions = (
                 questions_by_type.get(
                     question_type,
                     [],
                 )
             )
 
-            if len(available) < required_count:
+            available_count = len(
+                available_questions
+            )
+
+            if available_count < required_count:
 
                 raise RuntimeError(
-                    "Insufficient history for weekly "
-                    f"revision topic "
-                    f"'{question_type.value}'. "
+                    "Insufficient historical questions "
+                    f"for topic '{question_type.value}'. "
                     f"Required: {required_count}, "
-                    f"available: {len(available)}."
+                    f"available: {available_count}."
                 )
 
             selected = random.sample(
-                available,
+                available_questions,
                 required_count,
             )
 
@@ -325,15 +402,16 @@ class WeeklyRevisionGenerator:
             )
 
             LOGGER.info(
-                "Weekly revision selected %s "
-                "questions for %s.",
+                "Selected %s questions for topic '%s'.",
                 required_count,
                 question_type.value,
             )
 
         # -----------------------------------------------------
-        # Shuffle the complete 75-question paper so that
-        # sections are not simply grouped by generator.
+        # Shuffle the complete paper.
+        #
+        # This prevents the revision paper from appearing
+        # as six separate generator sections.
         # -----------------------------------------------------
 
         random.shuffle(
@@ -349,12 +427,10 @@ class WeeklyRevisionGenerator:
     @staticmethod
     def _get_previous_six_days() -> List[datetime.date]:
         """
-        Return the six calendar dates immediately preceding
-        the current date.
+        Return the six calendar dates immediately
+        preceding today.
 
-        Example:
-
-        If today is Sunday:
+        On Sunday this produces:
 
             Monday
             Tuesday
@@ -362,8 +438,6 @@ class WeeklyRevisionGenerator:
             Thursday
             Friday
             Saturday
-
-        are returned.
 
         Returns:
             List[date]:
@@ -381,13 +455,13 @@ class WeeklyRevisionGenerator:
     # FILTER HISTORY BY DATE
     # =========================================================
 
-    @staticmethod
     def _questions_from_previous_six_days(
+        self,
         days: List[datetime.date],
     ) -> List[Question]:
         """
-        Filter loaded history to questions created during
-        the previous six calendar days.
+        Filter active history to questions created
+        during the previous six calendar days.
 
         Args:
             days:
@@ -395,16 +469,15 @@ class WeeklyRevisionGenerator:
 
         Returns:
             List[Question]:
-                Questions belonging to those dates.
+                Historical questions belonging to
+                those dates.
         """
 
         valid_dates = set(days)
 
-        history = HistoryManager()
-
         questions: List[Question] = []
 
-        for question in history.questions:
+        for question in self.history.questions:
 
             created_date = (
                 question.created_at.date()
@@ -431,6 +504,10 @@ class WeeklyRevisionGenerator:
     ]:
         """
         Group historical questions by question type.
+
+        Returns:
+            Dictionary mapping QuestionType to
+            matching historical questions.
         """
 
         grouped: Dict[
@@ -459,7 +536,7 @@ class WeeklyRevisionGenerator:
         int,
     ]:
         """
-        Return the required Sunday revision distribution.
+        Return the exact Sunday revision distribution.
 
         Total:
 
@@ -468,15 +545,10 @@ class WeeklyRevisionGenerator:
 
         return {
             QuestionType.SQUARE: 10,
-
             QuestionType.CUBE: 10,
-
             QuestionType.SQUARE_ROOT: 10,
-
             QuestionType.CUBE_ROOT: 10,
-
             QuestionType.SIMPLIFICATION: 20,
-
             QuestionType.NUMBER_SERIES: 15,
         }
 
@@ -489,7 +561,8 @@ class WeeklyRevisionGenerator:
         cls,
     ) -> int:
         """
-        Return total number of Sunday revision questions.
+        Return the total number of Sunday
+        revision questions.
         """
 
         return sum(
@@ -503,7 +576,7 @@ class WeeklyRevisionGenerator:
     @staticmethod
     def _revision_question_pdf_name() -> str:
         """
-        Return weekly revision question PDF filename.
+        Return Sunday revision question PDF filename.
         """
 
         return "Weekly_Revision.pdf"
@@ -511,7 +584,7 @@ class WeeklyRevisionGenerator:
     @staticmethod
     def _revision_answer_pdf_name() -> str:
         """
-        Return weekly revision answer PDF filename.
+        Return Sunday revision answer PDF filename.
         """
 
         return "Weekly_Revision_Answers.pdf"
@@ -526,6 +599,9 @@ class WeeklyRevisionGenerator:
     ) -> None:
         """
         Assign sequential IDs from 1 to 75.
+
+        The original historical question IDs are not
+        retained in the Sunday revision paper.
         """
 
         for index, question in enumerate(
@@ -544,7 +620,7 @@ class WeeklyRevisionGenerator:
         questions: List[Question],
     ) -> List[Answer]:
         """
-        Create answer objects for revision questions.
+        Create Answer objects for the revision paper.
         """
 
         answers: List[Answer] = []
@@ -554,18 +630,11 @@ class WeeklyRevisionGenerator:
             answers.append(
                 Answer(
                     question_id=question.id,
-
                     question_type=(
                         question.question_type
                     ),
-
-                    question=(
-                        question.question
-                    ),
-
-                    answer=(
-                        question.answer
-                    ),
+                    question=question.question,
+                    answer=question.answer,
                 )
             )
 
@@ -579,22 +648,26 @@ class WeeklyRevisionGenerator:
         self,
     ) -> None:
         """
-        Clear the completed week's history.
+        Clear the completed week's active history.
 
-        This method is called only after the Sunday
-        revision email has been sent successfully.
+        This method is called only after:
 
-        The HistoryManager is cleared both:
-        - in memory
-        - on disk
+            - Question PDF generated
+            - Answer PDF generated
+            - Email successfully sent
+
+        The active history is cleared both:
+
+            1. From memory
+            2. From active.json
         """
 
         LOGGER.info(
-            "Weekly revision completed. "
+            "Weekly revision completed successfully. "
             "Starting history cleanup."
         )
 
-        self.history.clear()
+        self.history.cleanup_after_review()
 
         LOGGER.info(
             "Weekly revision history cleanup completed."
