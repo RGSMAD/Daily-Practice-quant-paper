@@ -1,3 +1,4 @@
+
 """
 mailer.py
 
@@ -23,10 +24,14 @@ LOGGER = get_logger(__name__)
 
 
 class EmailSender:
-    """Handles email delivery of generated PDF files."""
+    """
+    Handles email delivery of generated PDF files.
+    """
 
     def __init__(self) -> None:
-        """Initialize email configuration."""
+        """
+        Initialize email configuration.
+        """
 
         self.smtp_server = (
             settings.email.smtp_server
@@ -54,16 +59,30 @@ class EmailSender:
             settings.email.receiver_env
         )
 
+    # =========================================================
+    # SEND EMAIL
+    # =========================================================
 
     def send(
         self,
         attachments: Iterable[str | Path],
+        subject: str | None = None,
+        body: str | None = None,
     ) -> None:
-        """Send aptitude PDFs through email.
+        """
+        Send aptitude PDFs through email.
 
         Args:
             attachments:
                 PDF files to attach.
+
+            subject:
+                Optional email subject.
+                Defaults to configured subject.
+
+            body:
+                Optional email body.
+                Defaults to configured body.
 
         Raises:
             ValueError:
@@ -72,26 +91,22 @@ class EmailSender:
 
         self._validate_email_configuration()
 
-
         message = EmailMessage()
 
         message["Subject"] = (
-            settings.email.subject
+            subject
+            if subject is not None
+            else settings.email.subject
         )
 
-        message["From"] = (
-            self.sender
-        )
-
-        message["To"] = (
-            self.recipient
-        )
-
+        message["From"] = self.sender
+        message["To"] = self.recipient
 
         message.set_content(
-            settings.email.body
+            body
+            if body is not None
+            else settings.email.body
         )
-
 
         for attachment in attachments:
 
@@ -100,7 +115,6 @@ class EmailSender:
                 Path(attachment),
             )
 
-
         try:
 
             with smtplib.SMTP(
@@ -108,28 +122,23 @@ class EmailSender:
                 self.smtp_port,
             ) as smtp:
 
-
                 if self.use_tls:
 
                     smtp.starttls()
-
 
                 smtp.login(
                     self.username,
                     self.password,
                 )
 
-
                 smtp.send_message(
                     message
                 )
-
 
             LOGGER.info(
                 "Email sent successfully to %s",
                 self.recipient,
             )
-
 
         except smtplib.SMTPException:
 
@@ -139,12 +148,15 @@ class EmailSender:
 
             raise
 
-
+    # =========================================================
+    # VALIDATION
+    # =========================================================
 
     def _validate_email_configuration(
         self,
     ) -> None:
-        """Validate email credentials.
+        """
+        Validate email credentials.
 
         Raises:
             ValueError:
@@ -158,13 +170,11 @@ class EmailSender:
                 "Sender email is not configured."
             )
 
-
         if not self.password:
 
             raise ValueError(
                 "Email password is not configured."
             )
-
 
         if not self.recipient:
 
@@ -172,14 +182,17 @@ class EmailSender:
                 "Receiver email is not configured."
             )
 
-
+    # =========================================================
+    # ATTACHMENT
+    # =========================================================
 
     @staticmethod
     def _attach_file(
         message: EmailMessage,
         file_path: Path,
     ) -> None:
-        """Attach a file to an email.
+        """
+        Attach a file to an email.
 
         Args:
             message:
@@ -193,11 +206,11 @@ class EmailSender:
             file_path
         )
 
-
-        mime_type, _ = mimetypes.guess_type(
-            str(file_path)
+        mime_type, _ = (
+            mimetypes.guess_type(
+                str(file_path)
+            )
         )
-
 
         if mime_type:
 
@@ -210,14 +223,8 @@ class EmailSender:
 
         else:
 
-            main_type = (
-                "application"
-            )
-
-            sub_type = (
-                "octet-stream"
-            )
-
+            main_type = "application"
+            sub_type = "octet-stream"
 
         with file_path.open(
             "rb",
@@ -229,3 +236,4 @@ class EmailSender:
                 subtype=sub_type,
                 filename=file_path.name,
             )
+
