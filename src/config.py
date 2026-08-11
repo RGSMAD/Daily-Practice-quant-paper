@@ -1,10 +1,11 @@
 """
 config.py
 
-Central configuration loader for the Daily Aptitude Generator.
+Central configuration loader for the
+Daily Aptitude Generator.
 
-Loads configuration from config.yaml and exposes a strongly typed
-dataclass-based settings object.
+Loads configuration from config.yaml and exposes
+a strongly typed dataclass-based settings object.
 """
 
 from __future__ import annotations
@@ -18,10 +19,15 @@ from reportlab.lib.pagesizes import A4
 
 
 # ============================================================
-# PROJECT PATHS
+# PROJECT ROOT
 # ============================================================
 
+
 def find_project_root() -> Path:
+    """
+    Locate the project root by searching for config.yaml.
+    """
+
     current = Path(__file__).resolve()
 
     for parent in current.parents:
@@ -41,8 +47,12 @@ CONFIG_FILE = PROJECT_ROOT / "config.yaml"
 # PATH CONFIGURATION
 # ============================================================
 
+
 @dataclass(slots=True, frozen=True)
 class PathsConfig:
+    """
+    Runtime project paths.
+    """
 
     project_root: Path
     assets_dir: Path
@@ -55,8 +65,12 @@ class PathsConfig:
 # PDF CONFIGURATION
 # ============================================================
 
+
 @dataclass(slots=True, frozen=True)
 class PDFConfig:
+    """
+    PDF generation configuration.
+    """
 
     title: str
     author: str
@@ -85,8 +99,12 @@ class PDFConfig:
 # QUESTION CONFIGURATION
 # ============================================================
 
+
 @dataclass(slots=True, frozen=True)
 class QuestionConfig:
+    """
+    Daily question counts and distributions.
+    """
 
     square_questions: int
     cube_questions: int
@@ -105,8 +123,12 @@ class QuestionConfig:
 # RANGE CONFIGURATION
 # ============================================================
 
+
 @dataclass(slots=True, frozen=True)
 class NumberRangeConfig:
+    """
+    Number ranges used by question generators.
+    """
 
     square_min: int
     square_max: int
@@ -128,19 +150,31 @@ class NumberRangeConfig:
 
 
 # ============================================================
-# OTHER CONFIGURATION
+# DIFFICULTY CONFIGURATION
 # ============================================================
+
 
 @dataclass(slots=True, frozen=True)
 class DifficultyConfig:
+    """
+    Difficulty distribution.
+    """
 
     easy_percentage: int
     medium_percentage: int
     hard_percentage: int
 
 
+# ============================================================
+# EMAIL CONFIGURATION
+# ============================================================
+
+
 @dataclass(slots=True, frozen=True)
 class EmailConfig:
+    """
+    Email configuration.
+    """
 
     smtp_server: str
     smtp_port: int
@@ -155,24 +189,75 @@ class EmailConfig:
     use_tls: bool
 
 
+# ============================================================
+# HISTORY CONFIGURATION
+# ============================================================
+
+
 @dataclass(slots=True, frozen=True)
 class HistoryConfig:
+    """
+    Weekly active-history configuration.
+
+    active_file:
+        File containing the current week's questions.
+
+    archive_directory:
+        Directory where completed weekly history
+        is archived after Sunday revision.
+
+    archive_monthly:
+        If enabled, archives are placed inside
+        YYYY-MM monthly directories.
+    """
 
     enabled: bool
-    retain_days: int
-    filename: str
-    max_records: int
+    active_file: str
+    archive_directory: str
+    archive_monthly: bool
+
+
+# ============================================================
+# WEEKLY REVISION CONFIGURATION
+# ============================================================
+
+
+@dataclass(slots=True, frozen=True)
+class RevisionConfig:
+    """
+    Weekly revision configuration.
+    """
+
+    enabled: bool
+    revision_day: str
+    questions_per_topic: int
+
+
+# ============================================================
+# LOGGING CONFIGURATION
+# ============================================================
 
 
 @dataclass(slots=True, frozen=True)
 class LoggingConfig:
+    """
+    Application logging configuration.
+    """
 
     level: str
     filename: str
 
 
+# ============================================================
+# APPLICATION CONFIGURATION
+# ============================================================
+
+
 @dataclass(slots=True, frozen=True)
 class AppConfig:
+    """
+    Application-level configuration.
+    """
 
     timezone: str
     app_name: str
@@ -183,8 +268,12 @@ class AppConfig:
 # ROOT SETTINGS
 # ============================================================
 
+
 @dataclass(slots=True, frozen=True)
 class Settings:
+    """
+    Complete application configuration.
+    """
 
     paths: PathsConfig
     pdf: PDFConfig
@@ -193,17 +282,19 @@ class Settings:
     difficulty: DifficultyConfig
     email: EmailConfig
     history: HistoryConfig
+    revision: RevisionConfig
     logging: LoggingConfig
     app: AppConfig
 
 
 # ============================================================
-# YAML HELPERS
+# YAML LOADER
 # ============================================================
+
 
 def load_yaml() -> dict[str, Any]:
     """
-    Load YAML configuration.
+    Load YAML configuration from config.yaml.
     """
 
     if not CONFIG_FILE.exists():
@@ -215,13 +306,17 @@ def load_yaml() -> dict[str, Any]:
         "r",
         encoding="utf-8",
     ) as file:
-
         return yaml.safe_load(file) or {}
+
+
+# ============================================================
+# PROJECT PATHS
+# ============================================================
 
 
 def project_paths() -> PathsConfig:
     """
-    Generate runtime paths.
+    Generate runtime project paths.
     """
 
     return PathsConfig(
@@ -233,24 +328,17 @@ def project_paths() -> PathsConfig:
     )
 
 
-def history_file_path(
-    paths: PathsConfig,
-    history: HistoryConfig,
-) -> Path:
-    """
-    Return complete history file location.
-    """
-
-    return paths.history_dir / history.filename
-
-
 # ============================================================
 # VALIDATION
 # ============================================================
 
+
 def validate_difficulty(
     difficulty: DifficultyConfig,
 ) -> None:
+    """
+    Ensure difficulty percentages total 100%.
+    """
 
     total = (
         difficulty.easy_percentage
@@ -264,11 +352,51 @@ def validate_difficulty(
         )
 
 
+def validate_history(
+    history: HistoryConfig,
+) -> None:
+    """
+    Validate history configuration.
+    """
+
+    if not history.active_file.strip():
+        raise ValueError(
+            "History active_file cannot be empty."
+        )
+
+    if not history.archive_directory.strip():
+        raise ValueError(
+            "History archive_directory cannot be empty."
+        )
+
+
+def validate_revision(
+    revision: RevisionConfig,
+) -> None:
+    """
+    Validate weekly revision configuration.
+    """
+
+    if revision.questions_per_topic < 1:
+        raise ValueError(
+            "revision.questions_per_topic must be at least 1."
+        )
+
+    if not revision.revision_day.strip():
+        raise ValueError(
+            "revision.revision_day cannot be empty."
+        )
+
+
 # ============================================================
 # SETTINGS LOADER
 # ============================================================
 
+
 def load_settings() -> Settings:
+    """
+    Load and validate complete application configuration.
+    """
 
     config = load_yaml()
 
@@ -280,13 +408,27 @@ def load_settings() -> Settings:
     difficulty_data = config.get("difficulty", {})
     email_data = config.get("email", {})
     history_data = config.get("history", {})
+    revision_data = config.get("revision", {})
     logging_data = config.get("logging", {})
     app_data = config.get("app", {})
 
+    # --------------------------------------------------------
+    # PDF
+    # --------------------------------------------------------
+
     pdf = PDFConfig(
-        title=pdf_data.get("title", ""),
-        author=pdf_data.get("author", ""),
-        subject=pdf_data.get("subject", ""),
+        title=pdf_data.get(
+            "title",
+            "Daily Aptitude Practice",
+        ),
+        author=pdf_data.get(
+            "author",
+            "Daily Aptitude Generator",
+        ),
+        subject=pdf_data.get(
+            "subject",
+            "Quantitative Aptitude",
+        ),
         font_name=pdf_data.get(
             "font_name",
             "Helvetica",
@@ -333,50 +475,243 @@ def load_settings() -> Settings:
         ),
     )
 
+    # --------------------------------------------------------
+    # QUESTIONS
+    # --------------------------------------------------------
+
     questions = QuestionConfig(
-        **question_data
+        square_questions=question_data.get(
+            "square_questions",
+            10,
+        ),
+        cube_questions=question_data.get(
+            "cube_questions",
+            10,
+        ),
+        square_root_questions=question_data.get(
+            "square_root_questions",
+            10,
+        ),
+        cube_root_questions=question_data.get(
+            "cube_root_questions",
+            10,
+        ),
+        simplification_questions=question_data.get(
+            "simplification_questions",
+            20,
+        ),
+        series_questions=question_data.get(
+            "series_questions",
+            15,
+        ),
+        perfect_square_roots=question_data.get(
+            "perfect_square_roots",
+            8,
+        ),
+        non_perfect_square_roots=question_data.get(
+            "non_perfect_square_roots",
+            2,
+        ),
     )
+
+    # --------------------------------------------------------
+    # RANGES
+    # --------------------------------------------------------
 
     ranges = NumberRangeConfig(
-        **range_data
+        square_min=range_data.get(
+            "square_min",
+            10,
+        ),
+        square_max=range_data.get(
+            "square_max",
+            500,
+        ),
+        cube_min=range_data.get(
+            "cube_min",
+            10,
+        ),
+        cube_max=range_data.get(
+            "cube_max",
+            250,
+        ),
+        perfect_square_root_min=range_data.get(
+            "perfect_square_root_min",
+            10,
+        ),
+        perfect_square_root_max=range_data.get(
+            "perfect_square_root_max",
+            300,
+        ),
+        perfect_cube_root_min=range_data.get(
+            "perfect_cube_root_min",
+            2,
+        ),
+        perfect_cube_root_max=range_data.get(
+            "perfect_cube_root_max",
+            100,
+        ),
+        simplification_min_operand=range_data.get(
+            "simplification_min_operand",
+            10,
+        ),
+        simplification_max_operand=range_data.get(
+            "simplification_max_operand",
+            500,
+        ),
+        series_min_start=range_data.get(
+            "series_min_start",
+            1,
+        ),
+        series_max_start=range_data.get(
+            "series_max_start",
+            100,
+        ),
     )
 
+    # --------------------------------------------------------
+    # DIFFICULTY
+    # --------------------------------------------------------
+
     difficulty = DifficultyConfig(
-        **difficulty_data
+        easy_percentage=difficulty_data.get(
+            "easy_percentage",
+            40,
+        ),
+        medium_percentage=difficulty_data.get(
+            "medium_percentage",
+            40,
+        ),
+        hard_percentage=difficulty_data.get(
+            "hard_percentage",
+            20,
+        ),
     )
 
     validate_difficulty(difficulty)
 
+    # --------------------------------------------------------
+    # EMAIL
+    # --------------------------------------------------------
+
     email = EmailConfig(
-        **email_data
+        smtp_server=email_data.get(
+            "smtp_server",
+            "smtp.gmail.com",
+        ),
+        smtp_port=email_data.get(
+            "smtp_port",
+            587,
+        ),
+        subject=email_data.get(
+            "subject",
+            "Daily Aptitude Practice",
+        ),
+        body=email_data.get(
+            "body",
+            "Please find today's aptitude practice sheet attached.",
+        ),
+        sender_env=email_data.get(
+            "sender_env",
+            "EMAIL_USER",
+        ),
+        password_env=email_data.get(
+            "password_env",
+            "EMAIL_PASSWORD",
+        ),
+        receiver_env=email_data.get(
+            "receiver_env",
+            "RECEIVER_EMAIL",
+        ),
+        use_tls=email_data.get(
+            "use_tls",
+            True,
+        ),
     )
+
+    # --------------------------------------------------------
+    # HISTORY
+    # --------------------------------------------------------
 
     history = HistoryConfig(
         enabled=history_data.get(
             "enabled",
             True,
         ),
-        retain_days=history_data.get(
-            "retain_days",
-            30,
+        active_file=history_data.get(
+            "active_file",
+            "active.json",
         ),
-        filename=history_data.get(
-            "filename",
-            "questions_history.json",
+        archive_directory=history_data.get(
+            "archive_directory",
+            "archive",
         ),
-        max_records=history_data.get(
-            "max_records",
-            1000,
+        archive_monthly=history_data.get(
+            "archive_monthly",
+            True,
         ),
     )
 
-    logging = LoggingConfig(
-        **logging_data
+    validate_history(history)
+
+    # --------------------------------------------------------
+    # WEEKLY REVISION
+    # --------------------------------------------------------
+
+    revision = RevisionConfig(
+        enabled=revision_data.get(
+            "enabled",
+            True,
+        ),
+        revision_day=revision_data.get(
+            "revision_day",
+            "Sunday",
+        ),
+        questions_per_topic=revision_data.get(
+            "questions_per_topic",
+            5,
+        ),
     )
+
+    validate_revision(revision)
+
+    # --------------------------------------------------------
+    # LOGGING
+    # --------------------------------------------------------
+
+    logging_config = LoggingConfig(
+        level=logging_data.get(
+            "level",
+            "INFO",
+        ),
+        filename=logging_data.get(
+            "filename",
+            "generator.log",
+        ),
+    )
+
+    # --------------------------------------------------------
+    # APPLICATION
+    # --------------------------------------------------------
 
     app = AppConfig(
-        **app_data
+        timezone=app_data.get(
+            "timezone",
+            "Asia/Kolkata",
+        ),
+        app_name=app_data.get(
+            "app_name",
+            "Daily Aptitude Generator",
+        ),
+        version=app_data.get(
+            "version",
+            "1.0.0",
+        ),
     )
+
+    # --------------------------------------------------------
+    # FINAL SETTINGS
+    # --------------------------------------------------------
 
     return Settings(
         paths=paths,
@@ -386,7 +721,8 @@ def load_settings() -> Settings:
         difficulty=difficulty,
         email=email,
         history=history,
-        logging=logging,
+        revision=revision,
+        logging=logging_config,
         app=app,
     )
 
