@@ -1,3 +1,4 @@
+```yaml
 # ============================================================
 # Daily Aptitude Generator Configuration
 # ============================================================
@@ -11,7 +12,6 @@ app:
   app_name: "Daily Aptitude Generator"
   version: "1.0.0"
   timezone: "Asia/Kolkata"
-
 
 
 # ============================================================
@@ -39,6 +39,8 @@ pdf:
   question_pdf_name: "Daily_Practice.pdf"
   answer_pdf_name: "Daily_Practice_Answers.pdf"
 
+  revision_question_pdf_name: "Weekly_Revision.pdf"
+  revision_answer_pdf_name: "Weekly_Revision_Answers.pdf"
 
 
 # ============================================================
@@ -51,24 +53,19 @@ questions:
   square_questions: 10
   cube_questions: 10
 
-
   # Root practice
   square_root_questions: 10
   cube_root_questions: 10
-
 
   # Square root distribution
   perfect_square_roots: 8
   non_perfect_square_roots: 2
 
-
   # Simplification practice
   simplification_questions: 20
 
-
   # Number series
   series_questions: 15
-
 
 
 # ============================================================
@@ -77,36 +74,29 @@ questions:
 
 ranges:
 
-
   # Squares
   square_min: 10
   square_max: 500
-
 
   # Cubes
   cube_min: 10
   cube_max: 250
 
-
   # Perfect square roots
   perfect_square_root_min: 10
   perfect_square_root_max: 300
-
 
   # Perfect cube roots
   perfect_cube_root_min: 2
   perfect_cube_root_max: 100
 
-
   # Simplification operands
   simplification_min_operand: 10
   simplification_max_operand: 500
 
-
   # Series
   series_min_start: 1
   series_max_start: 100
-
 
 
 # ============================================================
@@ -114,11 +104,9 @@ ranges:
 # ============================================================
 
 difficulty:
-
   easy_percentage: 40
   medium_percentage: 40
   hard_percentage: 20
-
 
 
 # ============================================================
@@ -126,7 +114,6 @@ difficulty:
 # ============================================================
 
 email:
-
   smtp_server: "smtp.gmail.com"
   smtp_port: 587
 
@@ -146,21 +133,23 @@ email:
   receiver_env: "RECEIVER_EMAIL"
 
 
-
 # ============================================================
 # History Configuration
 # ============================================================
 
 history:
 
+  # Enable question history
   enabled: true
 
+  # Active history for the current week
   active_file: "active.json"
 
+  # Completed weekly histories
   archive_directory: "archive"
 
+  # Keep completed weekly history organized by month
   archive_monthly: true
-
 
 
 # ============================================================
@@ -169,12 +158,14 @@ history:
 
 revision:
 
+  # Enable weekly revision
   enabled: true
 
+  # Day on which weekly revision is generated
   revision_day: "Sunday"
 
+  # Number of questions selected from each topic
   questions_per_topic: 5
-
 
 
 # ============================================================
@@ -182,7 +173,6 @@ revision:
 # ============================================================
 
 logging:
-
   level: "INFO"
-
   filename: "generator.log"
+```
