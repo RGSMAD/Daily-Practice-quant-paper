@@ -1,4 +1,3 @@
-
 """
 main.py
 
@@ -108,7 +107,7 @@ def main() -> int:
 
 
             revision_generator = (
-                RevisionGenerator()
+                WeeklyRevisionGenerator()
             )
 
 
