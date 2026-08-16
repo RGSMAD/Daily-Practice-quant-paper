@@ -176,6 +176,10 @@ class WeeklyRevisionGenerator:
             self.generate()
         )
 
+        # -------------------------------------------------
+        # Send revision PDFs
+        # -------------------------------------------------
+
         self.email_sender.send(
             [
                 question_pdf,
@@ -186,6 +190,11 @@ class WeeklyRevisionGenerator:
         LOGGER.info(
             "Weekly revision email sent successfully."
         )
+
+        # -------------------------------------------------
+        # Cleanup only after the complete workflow
+        # succeeds.
+        # -------------------------------------------------
 
         self._cleanup_after_revision()
 
@@ -297,35 +306,22 @@ class WeeklyRevisionGenerator:
     @staticmethod
     def _get_previous_six_days() -> List:
         """
-        TEMPORARY TEST ONLY.
+        Return the six calendar dates immediately before today.
 
-        Treat 2026-08-09 as the revision day.
+        On Sunday this returns:
 
-        Therefore the previous six days become:
-
-            2026-08-03
-            2026-08-04
-            2026-08-05
-            2026-08-06
-            2026-08-07
-            2026-08-08
-
-        This is being used only to test the existing
-        August 1-8 history.
-
-        IMPORTANT:
-            Restore the normal implementation after
-            completing this test.
+            Monday
+            Tuesday
+            Wednesday
+            Thursday
+            Friday
+            Saturday
         """
 
-        test_revision_date = datetime(
-            2026,
-            8,
-            9,
-        ).date()
+        today = datetime.now().date()
 
         return [
-            test_revision_date - timedelta(days=offset)
+            today - timedelta(days=offset)
             for offset in range(6, 0, -1)
         ]
 
@@ -338,7 +334,7 @@ class WeeklyRevisionGenerator:
         days: List,
     ) -> List[Question]:
         """
-        Filter the loaded history to the
+        Filter the already-loaded history to the
         previous six calendar days.
         """
 
@@ -402,10 +398,6 @@ class WeeklyRevisionGenerator:
     ]:
         """
         Return the required Sunday revision distribution.
-
-        Total:
-
-            10 + 10 + 10 + 10 + 20 + 15 = 75
         """
 
         return {
@@ -508,11 +500,10 @@ class WeeklyRevisionGenerator:
         Clear the completed week's history.
 
         This is called only after:
-
-            1. Revision questions were selected.
-            2. Question PDF was generated.
-            3. Answer PDF was generated.
-            4. Email was sent successfully.
+            1. revision questions were selected,
+            2. question PDF was generated,
+            3. answer PDF was generated,
+            4. email was sent successfully.
         """
 
         LOGGER.info(
