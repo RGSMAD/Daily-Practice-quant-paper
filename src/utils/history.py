@@ -84,7 +84,7 @@ class HistoryManager:
 
         self.history_file: Path = (
             self.history_directory
-            / self.settings.filename
+            / self.settings.active_file
         )
 
         self.questions: list[Question] = []
