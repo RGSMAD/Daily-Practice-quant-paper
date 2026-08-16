@@ -2,7 +2,8 @@ name: Daily Aptitude Generator
 
 on:
   schedule:
-    # Runs every day at 03:45 IST (22:15 UTC previous day)
+    # Runs every day at 03:45 IST
+    # 03:45 IST = 22:15 UTC (previous day)
     - cron: "15 22 * * *"
 
   workflow_dispatch:
@@ -13,6 +14,7 @@ permissions:
 
 
 jobs:
+
   generate-daily-pdf:
 
     name: Generate Daily Aptitude PDFs
@@ -28,17 +30,17 @@ jobs:
 
     steps:
 
-      # --------------------------------------------------
-      # Checkout Repository
-      # --------------------------------------------------
+      # ==================================================
+      # CHECKOUT
+      # ==================================================
 
       - name: Checkout Repository
         uses: actions/checkout@v4
 
 
-      # --------------------------------------------------
-      # Python Setup
-      # --------------------------------------------------
+      # ==================================================
+      # PYTHON
+      # ==================================================
 
       - name: Set Up Python
         uses: actions/setup-python@v5
@@ -47,20 +49,13 @@ jobs:
           python-version: "3.12"
 
 
-      # --------------------------------------------------
-      # Dependencies
-      # --------------------------------------------------
+      # ==================================================
+      # DEPENDENCIES
+      # ==================================================
 
       - name: Upgrade pip
         run: |
           python -m pip install --upgrade pip
-
-
-      - name: Check repository files
-        run: |
-          pwd
-          ls -la
-          find . -name requirements.txt
 
 
       - name: Install Dependencies
@@ -68,90 +63,162 @@ jobs:
           pip install -r requirements.txt
 
 
-      # --------------------------------------------------
-      # Debug / Verification
-      # --------------------------------------------------
+      # ==================================================
+      # PROJECT VERIFICATION
+      # ==================================================
 
       - name: Verify Project Structure
         run: |
           python --version
           pip --version
-          ls -R
-
-
-      # --------------------------------------------------
-      # Debug Files
-      # --------------------------------------------------
-
-      - name: Debug files
-        run: |
+          echo "Current directory:"
           pwd
+          echo "Repository files:"
           ls -la
-          echo "Searching config.yaml..."
-          find . -name "config.yaml" -print
+          echo "Python project structure:"
+          find src -maxdepth 3 -type f | sort
 
-      # --------------------------------------------------
-      # Generate PDFs
-      # --------------------------------------------------
 
-      - name: Generate Daily Aptitude PDFs
+      # ==================================================
+      # VERIFY HISTORY
+      # ==================================================
+
+      - name: Verify Question History
+        run: |
+          echo "History directory:"
+          ls -la history || true
+
+          echo "History file:"
+          if [ -f history/questions_history.json ]; then
+            echo "questions_history.json exists."
+            wc -c history/questions_history.json
+          else
+            echo "questions_history.json does not exist yet."
+          fi
+
+
+      # ==================================================
+      # GENERATE PDFs
+      #
+      # Monday-Saturday:
+      #     AptitudeGenerator
+      #
+      # Sunday:
+      #     WeeklyRevisionGenerator
+      #
+      # The decision is made by src/main.py.
+      # ==================================================
+
+      - name: Generate Aptitude PDFs
         run: |
           python -m src.main
 
 
-      # --------------------------------------------------
-      # Persist Question History
-      # --------------------------------------------------
-      
+      # ==================================================
+      # VERIFY GENERATED FILES
+      # ==================================================
+
+      - name: Verify Generated Output
+        if: always()
+        run: |
+          echo "Output directory:"
+          ls -la output || true
+
+          echo ""
+          echo "Generated PDF files:"
+          find output -maxdepth 1 -type f -name "*.pdf" -print 2>/dev/null || true
+
+
+      # ==================================================
+      # PERSIST QUESTION HISTORY
+      #
+      # The application itself decides whether history
+      # should be added/cleaned.
+      #
+      # We only persist the resulting
+      # questions_history.json to Git.
+      #
+      # On Sunday, the weekly revision workflow should
+      # clean the history after successful completion.
+      # ==================================================
+
       - name: Commit Updated History
         if: always()
-
         run: |
 
-          git config --global user.name "github-actions[bot]"
+          git config --global user.name \
+            "github-actions[bot]"
 
           git config --global user.email \
-          "41898282+github-actions[bot]@users.noreply.github.com"
+            "41898282+github-actions[bot]@users.noreply.github.com"
 
 
           git add history/questions_history.json
 
 
-          git diff --cached --quiet || \
-          git commit \
-          -m "Update aptitude question history"
+          if git diff --cached --quiet; then
+            echo "No history changes to commit."
+          else
 
+            git commit \
+              -m "Update aptitude question history"
+
+          fi
+
+
+          # ------------------------------------------------
+          # Pull latest repository changes before pushing.
+          # ------------------------------------------------
 
           git pull --rebase origin main
+
+
+          # ------------------------------------------------
+          # Push only if there are commits to push.
+          # ------------------------------------------------
 
           git push origin main
 
 
-      # --------------------------------------------------
-      # Upload Generated PDFs
-      # --------------------------------------------------
+      # ==================================================
+      # UPLOAD DAILY PRACTICE PDF
+      #
+      # On Monday-Saturday this is:
+      #     Daily_Practice.pdf
+      #
+      # On Sunday the application may generate:
+      #     Weekly_Revision.pdf
+      #
+      # Therefore this step allows either workflow output.
+      # ==================================================
 
       - name: Upload Practice PDF
         if: always()
-
         uses: actions/upload-artifact@v4
 
         with:
-          name: Daily_Practice
+          name: Aptitude_Practice_PDF
 
-          path: output/Daily_Practice.pdf
+          path: |
+            output/Daily_Practice.pdf
+            output/Weekly_Revision.pdf
 
           if-no-files-found: warn
 
 
+      # ==================================================
+      # UPLOAD ANSWER PDF
+      # ==================================================
+
       - name: Upload Answer PDF
         if: always()
-
         uses: actions/upload-artifact@v4
 
         with:
-          name: Daily_Practice_Answers
+          name: Aptitude_Answer_PDF
 
-          path: output/Daily_Practice_Answers.pdf
+          path: |
+            output/Daily_Practice_Answers.pdf
+            output/Weekly_Revision_Answers.pdf
 
           if-no-files-found: warn
