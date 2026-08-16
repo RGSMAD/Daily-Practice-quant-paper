@@ -3,14 +3,12 @@ main.py
 
 Application entry point for the Daily Aptitude Generator.
 
-Responsible for selecting and starting the appropriate workflow:
-
-- Monday-Saturday:
+Monday-Saturday:
     Generate fresh daily aptitude questions,
     create PDFs, save questions to history,
     and send email notification.
 
-- Sunday:
+Sunday:
     Generate a weekly revision paper using questions
     from the previous six days, create PDFs,
     send the revision email, and clean the
@@ -20,6 +18,7 @@ Responsible for selecting and starting the appropriate workflow:
 from __future__ import annotations
 
 import sys
+
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -33,7 +32,7 @@ LOGGER = get_logger(__name__)
 
 
 # ============================================================
-# WORKFLOW SELECTION
+# REVISION DAY
 # ============================================================
 
 def _is_revision_day() -> bool:
@@ -41,11 +40,6 @@ def _is_revision_day() -> bool:
     Determine whether today is the configured revision day.
 
     The application timezone is taken from config.yaml.
-
-    Returns:
-        bool:
-            True when today matches the configured revision day.
-            False otherwise.
     """
 
     timezone = ZoneInfo(
@@ -71,24 +65,25 @@ def _is_revision_day() -> bool:
 
 
 # ============================================================
-# MAIN APPLICATION
+# MAIN
 # ============================================================
 
 def main() -> int:
     """
-    Execute the appropriate daily workflow.
+    Execute the appropriate application workflow.
 
-    Monday-Saturday runs the normal question generation
-    workflow.
+    Monday-Saturday:
+        Normal daily generation.
 
-    The configured revision day runs the weekly revision
-    workflow.
+    Configured revision day:
+        Weekly revision generation.
 
     Returns:
-        int:
-            Process exit status.
-            0 indicates success.
-            Non-zero indicates failure.
+        0:
+            Successful execution.
+
+        1:
+            Execution failure.
     """
 
     try:
@@ -97,6 +92,9 @@ def main() -> int:
             "Daily Aptitude Generator started."
         )
 
+        # ----------------------------------------------------
+        # SUNDAY / REVISION DAY
+        # ----------------------------------------------------
 
         if _is_revision_day():
 
@@ -105,19 +103,20 @@ def main() -> int:
                 settings.revision.revision_day,
             )
 
-
             revision_generator = (
                 WeeklyRevisionGenerator()
             )
 
-
             revision_generator.generate_and_send()
 
-
             LOGGER.info(
-                "Weekly revision workflow completed successfully."
+                "Weekly revision workflow "
+                "completed successfully."
             )
 
+        # ----------------------------------------------------
+        # MONDAY-SATURDAY / NORMAL GENERATION
+        # ----------------------------------------------------
 
         else:
 
@@ -125,34 +124,28 @@ def main() -> int:
                 "Today is a normal daily practice day."
             )
 
-
             generator = (
                 AptitudeGenerator()
             )
 
-
             generator.generate_and_send()
 
-
             LOGGER.info(
-                "Daily aptitude workflow completed successfully."
+                "Daily aptitude workflow "
+                "completed successfully."
             )
-
 
         LOGGER.info(
             "Daily Aptitude Generator completed successfully."
         )
 
-
         return 0
-
 
     except Exception:
 
         LOGGER.exception(
             "Daily Aptitude Generator failed."
         )
-
 
         return 1
 
