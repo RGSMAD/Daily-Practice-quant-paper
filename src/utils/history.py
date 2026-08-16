@@ -1,4 +1,3 @@
-
 """
 history.py
 
@@ -7,40 +6,39 @@ Daily Aptitude Generator.
 
 History lifecycle:
 
-    Monday - Saturday
-        |
-        | Generate daily questions
-        | Add questions to active history
-        | Save active history
-        v
-    active.json
-        |
-        | Sunday
-        | Read six days of history
-        | Generate weekly revision paper
-        | Successfully complete revision
-        v
-    Cleanup active history
-        |
-        +--> Clear in-memory questions
-        |
-        +--> Remove active.json
+Monday - Saturday
+    |
+    | Generate daily questions
+    | Check against current week's history
+    | Add new questions
+    | Save questions_history.json
+    v
+history/questions_history.json
+    |
+    | Sunday
+    | Read previous six days
+    | Generate weekly revision
+    | Send revision email
+    v
+Clear current week's history
+    |
+    +--> Clear in-memory questions
+    |
+    +--> Remove questions_history.json
 
-Important:
+IMPORTANT:
 
-    Normal save() NEVER performs cleanup.
-
-    History is cleaned only through the explicit
-    cleanup_after_review() call after the weekly
-    revision has been successfully generated.
+- save() NEVER performs cleanup.
+- History is retained throughout the week.
+- Cleanup is performed explicitly through clear().
+- No active.json is used.
+- No retention-based cleanup is performed here.
 """
 
 from __future__ import annotations
 
 import json
-import shutil
 
-from datetime import datetime, timedelta
 from pathlib import Path
 
 from src.config import settings
@@ -55,20 +53,23 @@ class HistoryManager:
     """
     Manages generated question history.
 
-    The history manager maintains the active weekly
-    question history used for:
+    The history represents the questions generated during
+    the current weekly cycle.
 
-        - Duplicate detection
-        - Sunday revision generation
+    Monday-Saturday questions are retained so that:
 
-    History is intentionally preserved during normal
-    daily generation and is cleared only after the
-    Sunday revision has been successfully generated.
+    1. Newly generated questions do not duplicate earlier
+       questions from the same week.
+    2. Sunday's revision workflow can select questions
+       from the previous six days.
+
+    History is cleared explicitly after the Sunday revision
+    workflow has completed successfully.
     """
 
-    # =========================================================
+    # =====================================================
     # INITIALIZATION
-    # =========================================================
+    # =====================================================
 
     def __init__(self) -> None:
         """
@@ -83,12 +84,7 @@ class HistoryManager:
 
         self.history_file: Path = (
             self.history_directory
-            / self.settings.active_file
-        )
-
-        self.archive_directory: Path = (
-            self.history_directory
-            / self.settings.archive_directory
+            / self.settings.filename
         )
 
         self.questions: list[Question] = []
@@ -100,17 +96,16 @@ class HistoryManager:
 
         self.load()
 
-    # =========================================================
+    # =====================================================
     # LOAD
-    # =========================================================
+    # =====================================================
 
     def load(self) -> None:
         """
-        Load active history from disk.
+        Load question history from disk.
 
-        If history is disabled or the active history
-        file does not exist, the in-memory history is
-        initialized as an empty list.
+        If history is disabled or the history file does
+        not exist, an empty history is used.
         """
 
         if not self.settings.enabled:
@@ -128,7 +123,7 @@ class HistoryManager:
             self.questions = []
 
             LOGGER.info(
-                "No active history file found: %s",
+                "No question history file found: %s",
                 self.history_file,
             )
 
@@ -174,33 +169,28 @@ class HistoryManager:
         ):
 
             LOGGER.exception(
-                "Failed to load history from %s.",
+                "Failed to load question history "
+                "from %s.",
                 self.history_file,
             )
 
             self.questions = []
 
-    # =========================================================
+    # =====================================================
     # SAVE
-    # =========================================================
+    # =====================================================
 
     def save(self) -> None:
         """
-        Save current active history to disk.
+        Save the current history to disk.
 
         IMPORTANT:
 
-            This method intentionally does NOT perform
-            any cleanup.
+        This method does NOT perform cleanup.
 
-        Daily generation must preserve all questions
-        generated during the current week.
-
-        Cleanup happens explicitly through:
-
-            cleanup_after_review()
-
-        after successful Sunday revision generation.
+        All questions generated during the current week
+        must remain available until Sunday's revision
+        workflow has completed.
         """
 
         if not self.settings.enabled:
@@ -230,22 +220,24 @@ class HistoryManager:
                 )
 
             LOGGER.info(
-                "Saved %s questions to history.",
+                "Saved %s questions to history: %s",
                 len(self.questions),
+                self.history_file,
             )
 
         except OSError:
 
             LOGGER.exception(
-                "Failed to save history to %s.",
+                "Failed to save question history "
+                "to %s.",
                 self.history_file,
             )
 
             raise
 
-    # =========================================================
+    # =====================================================
     # DUPLICATE CHECK
-    # =========================================================
+    # =====================================================
 
     def is_duplicate(
         self,
@@ -253,7 +245,7 @@ class HistoryManager:
     ) -> bool:
         """
         Check whether a question already exists
-        in active history.
+        in the current weekly history.
 
         Args:
             question:
@@ -277,16 +269,16 @@ class HistoryManager:
             for existing in self.questions
         )
 
-    # =========================================================
+    # =====================================================
     # ADD SINGLE QUESTION
-    # =========================================================
+    # =====================================================
 
     def add_question(
         self,
         question: Question,
     ) -> bool:
         """
-        Add one question to active history.
+        Add a single question to history.
 
         Duplicate questions are not added.
 
@@ -310,7 +302,7 @@ class HistoryManager:
         if self.is_duplicate(question):
 
             LOGGER.debug(
-                "Duplicate question rejected by history: %s",
+                "Duplicate question rejected: %s",
                 question.question,
             )
 
@@ -320,18 +312,18 @@ class HistoryManager:
 
         return True
 
-    # =========================================================
+    # =====================================================
     # ADD MULTIPLE QUESTIONS
-    # =========================================================
+    # =====================================================
 
     def add_questions(
         self,
         questions: list[Question],
     ) -> None:
         """
-        Add multiple questions to active history.
+        Add multiple questions to history.
 
-        Duplicate questions are silently skipped.
+        Duplicate questions are skipped.
         """
 
         if not self.settings.enabled:
@@ -358,9 +350,9 @@ class HistoryManager:
             duplicate_count,
         )
 
-    # =========================================================
+    # =====================================================
     # RECENT QUESTIONS
-    # =========================================================
+    # =====================================================
 
     def recent(
         self,
@@ -369,6 +361,8 @@ class HistoryManager:
         """
         Return questions generated within the
         specified number of days.
+
+        This method does NOT modify history.
 
         Args:
             days:
@@ -382,6 +376,8 @@ class HistoryManager:
 
             return []
 
+        from datetime import datetime, timedelta
+
         cutoff = (
             datetime.now()
             - timedelta(days=days)
@@ -393,19 +389,21 @@ class HistoryManager:
             if question.created_at >= cutoff
         ]
 
-    # =========================================================
+    # =====================================================
     # WEEKLY QUESTIONS
-    # =========================================================
+    # =====================================================
 
-    def weekly_questions(self) -> list[Question]:
+    def weekly_questions(
+        self,
+    ) -> list[Question]:
         """
-        Return all active questions intended for
-        the current Sunday revision.
+        Return all questions currently stored
+        in the weekly history.
 
-        The questions are ordered by creation time.
+        Questions are returned in creation order.
 
-        Monday-Saturday questions are therefore returned
-        in chronological order for revision processing.
+        This is primarily used by the Sunday revision
+        workflow.
         """
 
         return sorted(
@@ -413,194 +411,61 @@ class HistoryManager:
             key=lambda question: question.created_at,
         )
 
-    # =========================================================
-    # QUESTIONS BY TOPIC
-    # =========================================================
-
-    def questions_by_topic(
-        self,
-        topic: str,
-    ) -> list[Question]:
-        """
-        Return all active questions belonging to
-        the specified topic.
-
-        Args:
-            topic:
-                Topic name, for example:
-                "Squares", "Cubes", etc.
-
-        Returns:
-            Matching questions ordered by creation time.
-        """
-
-        return sorted(
-            [
-                question
-                for question in self.questions
-                if question.topic == topic
-            ],
-            key=lambda question: question.created_at,
-        )
-
-    # =========================================================
+    # =====================================================
     # COUNT
-    # =========================================================
+    # =====================================================
 
     def count(self) -> int:
         """
         Return the number of questions currently
-        stored in active history.
+        stored in history.
         """
 
         return len(self.questions)
 
-    # =========================================================
-    # ARCHIVE
-    # =========================================================
+    # =====================================================
+    # CLEAR
+    # =====================================================
 
-    def archive_current_history(self) -> Path | None:
+    def clear(self) -> None:
         """
-        Archive the current active history.
+        Completely clear the current weekly history.
 
-        Archiving is controlled by the
-        archive_monthly configuration.
+        This operation:
 
-        The active history itself is NOT removed here.
-
-        Returns:
-            Path:
-                Archive file path if archived.
-
-            None:
-                If archiving is disabled or no history
-                file exists.
-        """
-
-        if not self.settings.enabled:
-
-            return None
-
-        if not self.settings.archive_monthly:
-
-            return None
-
-        if not self.history_file.exists():
-
-            LOGGER.info(
-                "No active history available for archiving."
-            )
-
-            return None
-
-        self.archive_directory.mkdir(
-            parents=True,
-            exist_ok=True,
-        )
-
-        timestamp = datetime.now().strftime(
-            "%Y-%m-%d_%H-%M-%S"
-        )
-
-        archive_file = (
-            self.archive_directory
-            / f"history_{timestamp}.json"
-        )
-
-        try:
-
-            shutil.copy2(
-                self.history_file,
-                archive_file,
-            )
-
-            LOGGER.info(
-                "Archived active history to %s.",
-                archive_file,
-            )
-
-            return archive_file
-
-        except OSError:
-
-            LOGGER.exception(
-                "Failed to archive history."
-            )
-
-            raise
-
-    # =========================================================
-    # WEEKLY CLEANUP
-    # =========================================================
-
-    def cleanup_after_review(
-        self,
-        archive: bool = False,
-    ) -> None:
-        """
-        Clear active history after the Sunday revision
-        has been successfully generated.
+        1. Clears the in-memory question list.
+        2. Deletes questions_history.json.
 
         IMPORTANT:
 
-            This method must only be called after:
+        This method must only be called after the
+        Sunday revision workflow has completed successfully.
 
-                1. Revision questions were successfully
-                   selected.
-                2. Question PDF was successfully generated.
-                3. Answer PDF was successfully generated.
-
-        Args:
-            archive:
-                If True, archive the current history
-                before clearing it.
-
-        Cleanup performs:
-
-            1. Optional archive
-            2. Clear in-memory history
-            3. Delete active.json
-
-        This ensures that the next Monday starts
-        with an empty weekly history.
+        Normal daily generation must NOT call this method.
         """
 
-        if not self.settings.enabled:
-
-            self.questions.clear()
-
-            return
-
         LOGGER.info(
-            "Starting post-review history cleanup."
+            "Starting weekly history cleanup."
         )
-
-        # -----------------------------------------------------
-        # Optional archive
-        # -----------------------------------------------------
-
-        if archive:
-
-            self.archive_current_history()
-
-        # -----------------------------------------------------
-        # Clear in-memory history
-        # -----------------------------------------------------
 
         question_count = len(
             self.questions
         )
 
+        # -------------------------------------------------
+        # Clear in-memory history.
+        # -------------------------------------------------
+
         self.questions.clear()
 
         LOGGER.info(
-            "Cleared %s questions from HistoryManager.",
+            "Cleared %s questions from memory.",
             question_count,
         )
 
-        # -----------------------------------------------------
-        # Delete active history file
-        # -----------------------------------------------------
+        # -------------------------------------------------
+        # Delete history file.
+        # -------------------------------------------------
 
         if self.history_file.exists():
 
@@ -609,14 +474,15 @@ class HistoryManager:
                 self.history_file.unlink()
 
                 LOGGER.info(
-                    "Deleted active history file: %s",
+                    "Deleted question history file: %s",
                     self.history_file,
                 )
 
             except OSError:
 
                 LOGGER.exception(
-                    "Failed to delete active history file: %s",
+                    "Failed to delete question history "
+                    "file: %s",
                     self.history_file,
                 )
 
@@ -625,56 +491,23 @@ class HistoryManager:
         else:
 
             LOGGER.info(
-                "Active history file already absent."
+                "Question history file already absent: %s",
+                self.history_file,
             )
 
-    # =========================================================
-    # BACKWARD-COMPATIBLE CLEANUP
-    # =========================================================
+    # =====================================================
+    # EXPLICIT WEEKLY CLEANUP
+    # =====================================================
 
-    def cleanup(self) -> None:
+    def cleanup_after_review(
+        self,
+    ) -> None:
         """
-        Explicitly clean active history.
+        Clear history after successful weekly revision.
 
-        This method does NOT run automatically during
-        save().
-
-        For the Sunday revision workflow, prefer:
-
-            cleanup_after_review()
-        """
-
-        self.cleanup_after_review()
-
-    # =========================================================
-    # CLEAR
-    # =========================================================
-
-    def clear(self) -> None:
-        """
-        Completely clear active history.
-
-        This is an explicit operation and should not
-        be called during normal daily generation.
+        This is an explicit alias for clear() that makes
+        the intention clear when called from the Sunday
+        revision workflow.
         """
 
-        self.questions.clear()
-
-        if self.history_file.exists():
-
-            try:
-
-                self.history_file.unlink()
-
-            except OSError:
-
-                LOGGER.exception(
-                    "Failed to delete history file: %s",
-                    self.history_file,
-                )
-
-                raise
-
-        LOGGER.info(
-            "Active question history cleared."
-        )
+        self.clear()
